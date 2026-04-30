@@ -17,6 +17,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 
 const ICON_MAP: Record<string, any> = {
   briefcase: Briefcase,
