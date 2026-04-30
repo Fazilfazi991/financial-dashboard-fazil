@@ -5,22 +5,36 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const formatCurrency = (amount: number, currency: string = 'INR') => {
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(amount: number, currency: string = 'INR') {
+  if (currency === 'INR') {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+  return new Intl.NumberFormat('en-AE', {
     style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
+    currency: 'AED',
     maximumFractionDigits: 0,
   }).format(amount);
-};
+}
 
-export const formatDate = (date: string | Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date(date));
-};
+export function toAED(inr: number) {
+  return (inr / 25).toFixed(0);
+}
+
+export function fmtAED(aed: number | string) {
+  return `AED ${Number(aed).toLocaleString('en-AE')}`;
+}
+
+export function formatDate(date: string) {
+  return new Date(date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
 
 export const calculatePercentage = (value: number, total: number) => {
   if (total === 0) return 0;
