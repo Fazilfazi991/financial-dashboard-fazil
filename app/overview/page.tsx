@@ -131,29 +131,6 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* Section: Money Coming In (Optional but useful) */}
-      {receivables.length > 0 && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold px-1">Money Coming In</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {receivables.map(acc => {
-              const amount = getAccountBalance(acc.id);
-              return (
-                <div key={acc.id} className="glass p-8 rounded-[2.5rem] bg-primary/5 border-primary/20 flex justify-between items-center">
-                  <div>
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{acc.name}</div>
-                    <div className="text-2xl font-black text-primary tabular">{fmtAED(amount)}</div>
-                  </div>
-                  <button className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                    <ArrowDownLeft className="w-6 h-6" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Section D: Big Picture Summary & Payoff Momentum */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="glass p-10 rounded-[2.5rem] bg-secondary/10">

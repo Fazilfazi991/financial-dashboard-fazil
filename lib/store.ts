@@ -234,8 +234,7 @@ export const useFinanceStore = create<FinanceState>()(
         ],
         accounts: [
           { id: "acc_001", name: "Ayisha Savings", institution: "Friend — Ayisha", type: "savings", currency: "INR", openingBalance: 0, color: "#7F77DD", createdAt: new Date().toISOString(), notes: "Savings kept with friend Ayisha — INR", tag: "trusted-hold", icon: "piggy" },
-          { id: "acc_002", name: "UAE Cash Wallet", institution: "Cash", type: "cash", currency: "AED", openingBalance: 0, color: "#EF9F27", createdAt: new Date().toISOString(), isDefault: true, notes: "Physical cash on hand in UAE — AED", tag: "cash", icon: "wallet" },
-          { id: "acc_003", name: "Zorx — Owes Me", institution: "Zorx", type: "receivable", currency: "AED", openingBalance: 0, color: "#1D9E75", createdAt: new Date().toISOString(), notes: "Amount Zorx owes me — tracked as incoming receivable", tag: "receivable", icon: "arrow-in" }
+          { id: "acc_002", name: "UAE Cash Wallet", institution: "Cash", type: "cash", currency: "AED", openingBalance: 0, color: "#EF9F27", createdAt: new Date().toISOString(), isDefault: true, notes: "Physical cash on hand in UAE — AED", tag: "cash", icon: "wallet" }
         ],
         incomes: [
           { id: "inc_001", name: "Zorx", type: "Business", status: "active", currency: "AED", expectedMonthly: 0, actualThisMonth: 0, notes: "Primary income — Zorx. Add monthly amount.", color: "#1D9E75", icon: "briefcase", linkedAccountId: "acc_002" },
