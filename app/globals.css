@@ -57,6 +57,11 @@
   * {
     @apply border-border;
   }
+  html {
+    zoom: 0.7;
+    -moz-transform: scale(0.7);
+    -moz-transform-origin: top center;
+  }
   body {
     @apply bg-background text-foreground;
   }
