@@ -26,13 +26,13 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Transactions</h1>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">Transactions</h1>
           <p className="text-muted-foreground mt-1">Review and manage your daily ledger.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-xl font-semibold hover:bg-secondary/80 transition-colors">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-xl font-semibold hover:bg-secondary/80 transition-colors">
             <Download className="w-4 h-4" />
             Export
           </button>
@@ -40,25 +40,25 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input 
             type="text" 
-            placeholder="Search descriptions, categories..."
+            placeholder="Search descriptions..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-secondary/50 border border-border/50 rounded-2xl pl-11 pr-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-secondary/50 border border-border/50 rounded-2xl text-sm font-medium">
+        <button className="flex items-center justify-center gap-2 px-6 py-3 bg-secondary/50 border border-border/50 rounded-2xl text-sm font-medium">
           <Filter className="w-4 h-4" />
           Filters
         </button>
       </div>
 
-      <div className="glass rounded-3xl overflow-hidden">
-        <table className="w-full text-left border-collapse">
+      <div className="glass rounded-3xl overflow-hidden overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
+        <table className="w-full text-left border-collapse min-w-[700px]">
           <thead>
             <tr className="bg-secondary/30 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               <th className="px-6 py-4">Date</th>
