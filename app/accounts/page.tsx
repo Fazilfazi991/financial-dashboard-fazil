@@ -52,10 +52,10 @@ export default function AccountsPage() {
 
   const totalInINR = accounts.reduce((sum, a) => {
     const bal = getAccountBalance(a.id);
-    return sum + (a.currency === 'INR' ? bal : bal * settings.aedToInr);
+    return sum + (a.currency === 'INR' ? bal : bal * (settings?.aedToInr || 25));
   }, 0);
 
-  const totalInAED = totalInINR / settings.aedToInr;
+  const totalInAED = totalInINR / (settings?.aedToInr || 25);
 
   return (
     <div className="space-y-12 pb-32">

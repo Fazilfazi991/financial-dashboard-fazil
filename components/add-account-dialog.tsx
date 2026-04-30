@@ -137,7 +137,7 @@ export function AccountDialog({ children, account }: AccountDialogProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.keys(rates.rates).map(c => (
+                  {Object.keys(rates?.rates || {}).map(c => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectContent>
