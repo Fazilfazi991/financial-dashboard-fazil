@@ -46,7 +46,8 @@ export default function OverviewPage() {
     }
   }, [settings.migrated_real_data, resetToRealData]);
 
-  if (!mounted) return null;
+  // Removing guard temporarily to debug black screen
+  // if (!mounted) return null;
 
   const totalDebt = debts.reduce((sum, d) => sum + Number(d.balance), 0);
   const visaGoals = goals.filter(g => g.name.toLowerCase().includes('visa'));
