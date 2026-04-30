@@ -7,13 +7,15 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     runMigration();
+    setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return <div className="min-h-screen bg-background" />;
-  }
-
-  return <>{children}</>;
+  // We always render children so Server Components (like the root redirect) execute properly.
+  // The opacity trick prevents hydration flashes while still preserving the DOM tree.
+  return (
+    <div className={mounted ? "opacity-100" : "opacity-0"}>
+      {children}
+    </div>
+  );
 }
