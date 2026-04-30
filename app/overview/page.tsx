@@ -6,7 +6,10 @@ import { formatCurrency } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { OverviewChart, SpendingBreakdownChart } from "@/components/overview-chart";
+import dynamic from "next/dynamic";
+
+const OverviewChart = dynamic(() => import("@/components/overview-chart").then(mod => mod.OverviewChart), { ssr: false });
+const SpendingBreakdownChart = dynamic(() => import("@/components/overview-chart").then(mod => mod.SpendingBreakdownChart), { ssr: false });
 
 export default function OverviewPage() {
   const { 
@@ -76,10 +79,10 @@ export default function OverviewPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Good morning, {settings.name}</h1>
-          <p className="text-muted-foreground mt-1">Here's your financial snapshot for today.</p>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">Good morning, {settings.name}</h1>
+          <p className="text-muted-foreground mt-1">Here&apos;s your financial snapshot for today.</p>
         </div>
         <div className="text-right">
           <div className="text-sm font-medium text-muted-foreground tabular">

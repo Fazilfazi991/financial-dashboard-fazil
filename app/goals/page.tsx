@@ -23,7 +23,7 @@ export default function GoalsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Goals & Dreams</h1>
-          <p className="text-muted-foreground mt-1">Track what you're working toward.</p>
+          <p className="text-muted-foreground mt-1">Track what you&apos;re working toward.</p>
         </div>
         <AddGoalDialog />
       </div>

@@ -46,13 +46,13 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Accounts & Wallets</h1>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">Accounts & Wallets</h1>
           <p className="text-muted-foreground mt-1">Manage your financial institutions and balances.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right mr-4">
+        <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+          <div className="text-left sm:text-right">
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total Balance</div>
             <div className="text-2xl font-bold tabular">{formatCurrency(totalBalance, settings.currency)}</div>
           </div>

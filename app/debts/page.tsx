@@ -143,7 +143,7 @@ export default function DebtsPage() {
         
         {debts.length === 0 && (
           <div className="py-20 flex flex-col items-center justify-center text-center glass rounded-3xl border-dashed">
-            <h3 className="text-lg font-semibold">You're debt-free!</h3>
+            <h3 className="text-lg font-semibold">You&apos;re debt-free!</h3>
             <p className="text-muted-foreground max-w-xs mx-auto mt-2">
               All liabilities are cleared. Add any future loans or credit card balances here.
             </p>

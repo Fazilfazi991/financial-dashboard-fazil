@@ -27,10 +27,10 @@ export default function PipelinePage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-8 h-[calc(100vh-160px)] flex flex-col">
-      <div className="flex justify-between items-center shrink-0">
+    <div className="space-y-8 flex flex-col h-full lg:h-[calc(100vh-160px)]">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Project Pipeline</h1>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">Project Pipeline</h1>
           <p className="text-muted-foreground mt-1">Manage your freelance workload and invoices.</p>
         </div>
         <ProjectDialog />

@@ -101,7 +101,7 @@ export function CommandPalette() {
             </div>
           ) : (
             <div className="py-12 text-center">
-              <p className="text-sm text-muted-foreground">No results found for "{query}"</p>
+              <p className="text-sm text-muted-foreground">No results found for &quot;{query}&quot;</p>
             </div>
           )}
         </div>
