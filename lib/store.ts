@@ -4,18 +4,26 @@ import { persist } from 'zustand/middleware';
 export interface Debt {
   id: string;
   name: string;
+  total: number;
   balance: number;
   rate: number;
   minPayment: number;
-  total: number;
+  notes?: string;
+  color: string;
 }
 
 export interface Income {
   id: string;
   name: string;
-  type: 'salary' | 'freelance' | 'dividend' | 'other';
-  expected: number;
-  actual: number;
+  type: 'Business' | 'Freelance' | 'placeholder';
+  status: 'active' | 'coming_soon';
+  currency: string | null;
+  expectedMonthly: number;
+  actualThisMonth: number;
+  notes: string;
+  color: string;
+  icon: string;
+  linkedAccountId: string;
 }
 
 export interface Project {

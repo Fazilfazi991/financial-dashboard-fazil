@@ -100,70 +100,52 @@ export default function OverviewPage() {
             Every rupee earned above expenses clears 0.06% of your total debt.
           </p>
         </div>
-      </motion.div>
-
-      {/* Section: Wallets Row */}
+      </motion.div>      {/* Section: Debt Portfolio */}
       <div className="space-y-6">
-        <h2 className="text-xl font-bold px-1 flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-primary" /> Active Wallets
-        </h2>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-1 px-1">
-          {accounts.filter(a => a.type !== 'receivable').map(account => {
-            const Icon = ICON_MAP[account.icon || ''] || Wallet;
-            const balance = getAccountBalance(account.id);
-            return (
-              <div key={account.id} className="glass min-w-[280px] p-6 rounded-3xl shrink-0">
-                <div className="flex justify-between items-center mb-4">
-                  <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `${account.color}15`, color: account.color }}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{account.tag}</span>
+        <div className="flex justify-between items-end px-1">
+          <h2 className="text-xl font-bold">Debt Portfolio</h2>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{debts.length} Active Debts</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {debts.map((debt) => (
+            <div key={debt.id} className="glass p-6 rounded-3xl relative overflow-hidden group">
+              <div className="flex justify-between items-start mb-4">
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate max-w-[120px]">
+                  {debt.name}
                 </div>
-                <div className="text-lg font-black tabular">
-                  {account.currency === 'INR' ? formatCurrency(balance, 'INR') : fmtAED(balance)}
-                </div>
-                <div className="text-[10px] font-bold text-muted-foreground mt-1">
-                  {account.name}
-                </div>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: debt.color }} />
               </div>
-            );
-          })}
+              <div className="text-xl font-black tabular">
+                {formatCurrency(debt.balance, 'INR')}
+              </div>
+              <div className="text-[10px] font-bold text-muted-foreground mt-1">
+                {fmtAED(toAED(debt.balance))}
+              </div>
+              {debt.name === "Ikaka Gold" && (
+                <div className="mt-4 py-1.5 bg-amber-500/10 rounded-lg text-center">
+                  <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">Gold Offset Applied</span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Section: Money Coming In */}
+      {/* Section: Money Coming In (Optional but useful) */}
       {receivables.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-xl font-bold px-1 flex items-center gap-2">
-            <ArrowDownLeft className="w-5 h-5 text-primary" /> Money Coming In
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <h2 className="text-xl font-bold px-1">Money Coming In</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {receivables.map(acc => {
               const amount = getAccountBalance(acc.id);
               return (
-                <div key={acc.id} className="glass p-8 rounded-[2.5rem] bg-primary/5 border-primary/20 relative group overflow-hidden">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                      <ArrowDownLeft className="w-6 h-6" />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] font-bold text-primary uppercase tracking-widest">Expected Soon</div>
-                      <div className="text-xs font-bold text-muted-foreground">Due in 5 days</div>
-                    </div>
+                <div key={acc.id} className="glass p-8 rounded-[2.5rem] bg-primary/5 border-primary/20 flex justify-between items-center">
+                  <div>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{acc.name}</div>
+                    <div className="text-2xl font-black text-primary tabular">{fmtAED(amount)}</div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase">{acc.institution}</div>
-                    <h3 className="text-xl font-black">{acc.name}</h3>
-                  </div>
-                  <div className="mt-6 text-3xl font-black text-primary tabular">
-                    {fmtAED(amount)}
-                  </div>
-                  <button className="w-full mt-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-5 h-5" />
-                    Mark Received
+                  <button className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <ArrowDownLeft className="w-6 h-6" />
                   </button>
                 </div>
               );
@@ -172,41 +154,9 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {/* Section B: 4 Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass p-6 rounded-3xl border-l-4 border-destructive">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
-            <TrendingDown className="w-3 h-3" /> Total Debt
-          </div>
-          <div className="text-xl font-bold tabular">{formatCurrency(totalDebt, 'INR')}</div>
-          <div className="text-[10px] font-medium text-muted-foreground mt-1">{fmtAED(toAED(totalDebt))}</div>
-        </div>
-        <div className="glass p-6 rounded-3xl border-l-4 border-amber-500">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
-            <ShieldAlert className="w-3 h-3" /> Visa Goals
-          </div>
-          <div className="text-xl font-bold tabular">{formatCurrency(totalVisaGoal, 'INR')}</div>
-          <div className="text-[10px] font-medium text-muted-foreground mt-1">{fmtAED(toAED(totalVisaGoal))}</div>
-        </div>
-        <div className="glass p-6 rounded-3xl border-l-4 border-primary">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
-            <Zap className="w-3 h-3" /> Monthly Burn
-          </div>
-          <div className="text-xl font-bold tabular">{formatCurrency(monthlyBurn, 'INR')}</div>
-          <div className="text-[10px] font-medium text-muted-foreground mt-1">{fmtAED(toAED(monthlyBurn))}</div>
-        </div>
-        <div className="glass p-6 rounded-3xl border-l-4 border-purple-500">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
-            <Calendar className="w-3 h-3" /> Target Date
-          </div>
-          <div className="text-xl font-bold">Dec 2027</div>
-          <div className="text-[10px] font-medium text-muted-foreground mt-1">Based on goals</div>
-        </div>
-      </div>
-
-      {/* Section D: Big Picture Summary */}
+      {/* Section D: Big Picture Summary & Payoff Momentum */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="glass p-10 rounded-[2.5rem] bg-secondary/20">
+        <div className="glass p-10 rounded-[2.5rem] bg-secondary/10">
           <h2 className="text-2xl font-bold mb-6">Big Picture Summary</h2>
           <div className="space-y-4 font-mono text-sm">
             <div className="flex justify-between border-b border-white/5 pb-2">
@@ -217,10 +167,20 @@ export default function OverviewPage() {
               <span className="text-muted-foreground uppercase">Visa Goals</span>
               <span>{formatCurrency(totalVisaGoal, 'INR')}</span>
             </div>
-            <div className="flex justify-between pt-2 text-lg font-black">
-              <span className="text-primary uppercase tracking-wider">Grand Total</span>
-              <span className="text-primary">{formatCurrency(freedomNumber, 'INR')}</span>
+            <div className="flex justify-between pt-2 text-lg font-black text-primary">
+              <span className="uppercase tracking-wider">Grand Total</span>
+              <span>{formatCurrency(freedomNumber, 'INR')}</span>
             </div>
+            <div className="flex justify-between pt-1 text-xs text-muted-foreground">
+              <span>AED Equivalent</span>
+              <span>{fmtAED(toAED(freedomNumber))}</span>
+            </div>
+          </div>
+
+          <div className="mt-10 p-6 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+            <p className="text-[11px] text-amber-500 leading-relaxed italic">
+              &quot;At current monthly expenses of {formatCurrency(monthlyBurn, 'INR')}, you need to earn that minimum just to survive. Every rupee above that goes toward the goal.&quot;
+            </p>
           </div>
         </div>
 
@@ -228,12 +188,16 @@ export default function OverviewPage() {
           <div className="flex flex-col h-full justify-between gap-8">
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Payoff Momentum</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Every ₹1,000 extra clears <span className="text-primary font-bold">0.06%</span> of total debt.
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Every ₹1,000 you earn above your monthly expenses clears <span className="text-primary font-bold">0.06%</span> of your total debt.
               </p>
             </div>
             <div className="space-y-6">
               <div className="space-y-3">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
+                  <span>Monthly Surplus</span>
+                  <span className="text-primary">{formatCurrency(extraPayment, 'INR')}</span>
+                </div>
                 <input 
                   type="range" 
                   min="0" 
@@ -245,10 +209,43 @@ export default function OverviewPage() {
                 />
               </div>
               <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl text-center">
-                <div className="text-3xl font-black text-primary tabular">{monthsToFreedom} <span className="text-xs">months</span></div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Time to Freedom</div>
+                <div className="text-3xl font-black text-primary tabular">{monthsToFreedom} <span className="text-xs font-normal">months</span></div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Today's Snapshot */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 glass p-8 rounded-[2.5rem] flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest mb-4">
+              <TrendingUp className="w-3 h-3" /> Today&apos;s Snapshot
+            </div>
+            <div className="flex gap-12">
+              <div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Income</div>
+                <div className="text-xl font-bold text-primary">+{formatCurrency(todayIncome, 'INR')}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Expense</div>
+                <div className="text-xl font-bold text-destructive">-{formatCurrency(todayExpense, 'INR')}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Net</div>
+                <div className="text-xl font-bold text-foreground">{formatCurrency(todayIncome - todayExpense, 'INR')}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="glass p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+            <ArrowUpRight className="w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-sm">Stay Focused</h3>
+          <p className="text-[10px] text-muted-foreground mt-1 px-4">Every rupee saved is a step toward your freedom number.</p>
         </div>
       </div>
     </div>
