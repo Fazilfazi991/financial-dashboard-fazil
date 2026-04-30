@@ -15,29 +15,30 @@ import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 
 export function AddDebtDialog({ children }: { children?: React.ReactNode }) {
-  const { setDebts, debts } = useFinanceStore();
+  const { addDebt, debts } = useFinanceStore();
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [balance, setBalance] = React.useState("");
   const [rate, setRate] = React.useState("");
   const [minPayment, setMinPayment] = React.useState("");
   const [total, setTotal] = React.useState("");
+  const [color, setColor] = React.useState("#E24B4A");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !balance || !rate || !minPayment || !total) return;
 
-    const newDebt = {
+    addDebt({
       id: crypto.randomUUID(),
       name,
       balance: parseFloat(balance),
       rate: parseFloat(rate),
       minPayment: parseFloat(minPayment),
       total: parseFloat(total),
-      type: 'other' // default
-    };
+      color,
+      notes: ""
+    });
 
-    setDebts([...debts, newDebt]);
     setOpen(false);
     // Reset
     setName("");
@@ -121,6 +122,16 @@ export function AddDebtDialog({ children }: { children?: React.ReactNode }) {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Theme Color</label>
+            <Input 
+              type="color" 
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="bg-secondary/50 border-border/50 rounded-xl h-10 p-1"
+            />
           </div>
 
           <DialogFooter className="pt-4">

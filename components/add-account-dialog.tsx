@@ -117,7 +117,7 @@ export function AccountDialog({ children, account }: AccountDialogProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Type</label>
-              <Select onValueChange={setType} defaultValue={type}>
+              <Select onValueChange={(val: any) => setType(val)} defaultValue={type}>
                 <SelectTrigger className="bg-secondary/50 border-border/50 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
@@ -132,7 +132,7 @@ export function AccountDialog({ children, account }: AccountDialogProps) {
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Currency</label>
-              <Select onValueChange={setCurrency} defaultValue={currency}>
+              <Select onValueChange={(val: any) => setCurrency(val)} defaultValue={currency}>
                 <SelectTrigger className="bg-secondary/50 border-border/50 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>

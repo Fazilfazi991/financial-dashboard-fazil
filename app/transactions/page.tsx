@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 
 export default function TransactionsPage() {
-  const { transactions, accounts, settings } = useFinanceStore();
+  const { transactions, accounts, settings, deleteTransaction } = useFinanceStore();
   const [mounted, setMounted] = useState(false);
   const [search, setSearch] = useState("");
 

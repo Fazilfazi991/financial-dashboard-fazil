@@ -119,14 +119,29 @@ interface FinanceState {
   
   addTransaction: (txn: Transaction) => void;
   deleteTransaction: (id: string) => void;
+  updateTransaction: (id: string, txn: Partial<Transaction>) => void;
+  
   addAccount: (acc: Account) => void;
   deleteAccount: (id: string) => void;
+  updateAccount: (id: string, acc: Partial<Account>) => void;
+  
+  addDebt: (debt: Debt) => void;
   deleteDebt: (id: string) => void;
+  updateDebt: (id: string, debt: Partial<Debt>) => void;
+  
+  addGoal: (goal: Goal) => void;
   deleteGoal: (id: string) => void;
+  updateGoal: (id: string, goal: Partial<Goal>) => void;
+  
+  addIncome: (income: Income) => void;
+  deleteIncome: (id: string) => void;
+  updateIncome: (id: string, income: Partial<Income>) => void;
+  
   deleteProject: (id: string) => void;
-  updateSettings: (settings: Partial<FinanceState['settings']>) => void;
-  updateProjectStatus: (id: string, status: Project['status']) => void;
   updateProject: (project: Project) => void;
+  updateProjectStatus: (id: string, status: Project['status']) => void;
+  
+  updateSettings: (settings: Partial<FinanceState['settings']>) => void;
   setSettings: (settings: Partial<FinanceState['settings']>) => void;
   resetToRealData: () => void;
   receiveReceivable: (receivableId: string, toAccountId: string, amount: number) => void;
@@ -166,10 +181,34 @@ export const useFinanceStore = create<FinanceState>()(
       
       addTransaction: (txn) => set((state) => ({ transactions: [txn, ...state.transactions] })),
       deleteTransaction: (id) => set((state) => ({ transactions: state.transactions.filter(t => t.id !== id) })),
+      updateTransaction: (id, updatedTxn) => set((state) => ({
+        transactions: state.transactions.map(t => t.id === id ? { ...t, ...updatedTxn } : t)
+      })),
+
       addAccount: (acc) => set((state) => ({ accounts: [...state.accounts, acc] })),
       deleteAccount: (id) => set((state) => ({ accounts: state.accounts.filter(a => a.id !== id) })),
+      updateAccount: (id, updatedAcc) => set((state) => ({
+        accounts: state.accounts.map(a => a.id === id ? { ...a, ...updatedAcc } : a)
+      })),
+
+      addDebt: (debt) => set((state) => ({ debts: [...state.debts, debt] })),
       deleteDebt: (id) => set((state) => ({ debts: state.debts.filter(d => d.id !== id) })),
+      updateDebt: (id, updatedDebt) => set((state) => ({
+        debts: state.debts.map(d => d.id === id ? { ...d, ...updatedDebt } : d)
+      })),
+
+      addGoal: (goal) => set((state) => ({ goals: [...state.goals, goal] })),
       deleteGoal: (id) => set((state) => ({ goals: state.goals.filter(g => g.id !== id) })),
+      updateGoal: (id, updatedGoal) => set((state) => ({
+        goals: state.goals.map(g => g.id === id ? { ...g, ...updatedGoal } : g)
+      })),
+
+      addIncome: (income) => set((state) => ({ incomes: [...state.incomes, income] })),
+      deleteIncome: (id) => set((state) => ({ incomes: state.incomes.filter(i => i.id !== id) })),
+      updateIncome: (id, updatedIncome) => set((state) => ({
+        incomes: state.incomes.map(i => i.id === id ? { ...i, ...updatedIncome } : i)
+      })),
+
       deleteProject: (id) => set((state) => ({ projects: state.projects.filter(p => p.id !== id) })),
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
       setSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
