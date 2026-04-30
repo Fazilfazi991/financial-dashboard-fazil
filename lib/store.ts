@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export interface Debt {
   id: string;
@@ -82,6 +81,7 @@ export interface Transaction {
   notes?: string;
   tags?: string[];
 }
+
 interface FinanceState {
   accounts: Account[];
   transactions: Transaction[];
@@ -90,6 +90,7 @@ interface FinanceState {
   expenses: Expense[];
   incomes: Income[];
   projects: Project[];
+  loaded: boolean;
   rates: {
     base: string;
     rates: Record<string, number>;
@@ -106,8 +107,11 @@ interface FinanceState {
     migrated_real_data: boolean;
     apiKey: string;
   };
-  
-  // Actions
+
+  // Hydrate from API
+  hydrate: (data: Partial<FinanceState>) => void;
+
+  // Setters (local state only — used during hydrate)
   setDebts: (debts: Debt[]) => void;
   setIncomes: (incomes: Income[]) => void;
   setProjects: (projects: Project[]) => void;
@@ -116,190 +120,195 @@ interface FinanceState {
   setAccounts: (accounts: Account[]) => void;
   setTransactions: (transactions: Transaction[]) => void;
   setRates: (rates: FinanceState['rates']) => void;
-  
+
+  // CRUD actions — update local state + call API
   addTransaction: (txn: Transaction) => void;
   deleteTransaction: (id: string) => void;
   updateTransaction: (id: string, txn: Partial<Transaction>) => void;
-  
+
   addAccount: (acc: Account) => void;
   deleteAccount: (id: string) => void;
   updateAccount: (id: string, acc: Partial<Account>) => void;
-  
+
   addDebt: (debt: Debt) => void;
   deleteDebt: (id: string) => void;
   updateDebt: (id: string, debt: Partial<Debt>) => void;
-  
+
   addGoal: (goal: Goal) => void;
   deleteGoal: (id: string) => void;
   updateGoal: (id: string, goal: Partial<Goal>) => void;
-  
+
   addIncome: (income: Income) => void;
   deleteIncome: (id: string) => void;
   updateIncome: (id: string, income: Partial<Income>) => void;
-  
+
   deleteProject: (id: string) => void;
   updateProject: (project: Project) => void;
   updateProjectStatus: (id: string, status: Project['status']) => void;
-  
+
   updateSettings: (settings: Partial<FinanceState['settings']>) => void;
   setSettings: (settings: Partial<FinanceState['settings']>) => void;
   resetToRealData: () => void;
   receiveReceivable: (receivableId: string, toAccountId: string, amount: number) => void;
 }
 
+// Helper to fire-and-forget API calls (no await blocking UI)
+const api = {
+  post: (url: string, body: any) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(console.error),
+  put: (url: string, body: any) => fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(console.error),
+  del: (url: string) => fetch(url, { method: 'DELETE' }).catch(console.error),
+};
+
 export const useFinanceStore = create<FinanceState>()(
-  persist(
-    (set) => ({
-      accounts: [],
-      transactions: [],
-      debts: [],
-      goals: [],
-      expenses: [],
-      incomes: [],
-      projects: [],
-      rates: { base: 'USD', rates: { INR: 83.5, AED: 3.67, EUR: 0.92, USD: 1 }, updated: 0 },
-      settings: {
-        currency: 'INR',
-        secondaryCurrency: 'AED',
-        aedToInr: 25,
-        theme: 'dark',
-        name: 'User',
-        accentColor: '#10b981',
-        onboarded: false,
-        migrated_real_data: false,
-        apiKey: '',
-      },
-      
-      setDebts: (debts) => set({ debts }),
-      setIncomes: (incomes) => set({ incomes }),
-      setProjects: (projects) => set({ projects }),
-      setExpenses: (expenses) => set({ expenses }),
-      setGoals: (goals) => set({ goals }),
-      setAccounts: (accounts) => set({ accounts }),
-      setTransactions: (transactions) => set({ transactions }),
-      setRates: (rates) => set({ rates }),
-      
-      addTransaction: (txn) => set((state) => ({ transactions: [txn, ...state.transactions] })),
-      deleteTransaction: (id) => set((state) => ({ transactions: state.transactions.filter(t => t.id !== id) })),
-      updateTransaction: (id, updatedTxn) => set((state) => ({
-        transactions: state.transactions.map(t => t.id === id ? { ...t, ...updatedTxn } : t)
-      })),
+  (set, get) => ({
+    accounts: [],
+    transactions: [],
+    debts: [],
+    goals: [],
+    expenses: [],
+    incomes: [],
+    projects: [],
+    loaded: false,
+    rates: { base: 'USD', rates: { INR: 83.5, AED: 3.67, EUR: 0.92, USD: 1 }, updated: 0 },
+    settings: {
+      currency: 'INR',
+      secondaryCurrency: 'AED',
+      aedToInr: 25,
+      theme: 'dark',
+      name: 'User',
+      accentColor: '#10b981',
+      onboarded: false,
+      migrated_real_data: false,
+      apiKey: '',
+    },
 
-      addAccount: (acc) => set((state) => ({ accounts: [...state.accounts, acc] })),
-      deleteAccount: (id) => set((state) => ({ accounts: state.accounts.filter(a => a.id !== id) })),
-      updateAccount: (id, updatedAcc) => set((state) => ({
-        accounts: state.accounts.map(a => a.id === id ? { ...a, ...updatedAcc } : a)
-      })),
+    hydrate: (data) => set({ ...data, loaded: true }),
 
-      addDebt: (debt) => set((state) => ({ debts: [...state.debts, debt] })),
-      deleteDebt: (id) => set((state) => ({ debts: state.debts.filter(d => d.id !== id) })),
-      updateDebt: (id, updatedDebt) => set((state) => ({
-        debts: state.debts.map(d => d.id === id ? { ...d, ...updatedDebt } : d)
-      })),
+    setDebts: (debts) => set({ debts }),
+    setIncomes: (incomes) => set({ incomes }),
+    setProjects: (projects) => set({ projects }),
+    setExpenses: (expenses) => set({ expenses }),
+    setGoals: (goals) => set({ goals }),
+    setAccounts: (accounts) => set({ accounts }),
+    setTransactions: (transactions) => set({ transactions }),
+    setRates: (rates) => set({ rates }),
 
-      addGoal: (goal) => set((state) => ({ goals: [...state.goals, goal] })),
-      deleteGoal: (id) => set((state) => ({ goals: state.goals.filter(g => g.id !== id) })),
-      updateGoal: (id, updatedGoal) => set((state) => ({
-        goals: state.goals.map(g => g.id === id ? { ...g, ...updatedGoal } : g)
-      })),
+    // Transactions
+    addTransaction: (txn) => {
+      set((state) => ({ transactions: [txn, ...state.transactions] }));
+      api.post('/api/transactions', txn);
+    },
+    deleteTransaction: (id) => {
+      set((state) => ({ transactions: state.transactions.filter(t => t.id !== id) }));
+      api.del(`/api/transactions/${id}`);
+    },
+    updateTransaction: (id, updatedTxn) => {
+      set((state) => ({ transactions: state.transactions.map(t => t.id === id ? { ...t, ...updatedTxn } : t) }));
+    },
 
-      addIncome: (income) => set((state) => ({ incomes: [...state.incomes, income] })),
-      deleteIncome: (id) => set((state) => ({ incomes: state.incomes.filter(i => i.id !== id) })),
-      updateIncome: (id, updatedIncome) => set((state) => ({
-        incomes: state.incomes.map(i => i.id === id ? { ...i, ...updatedIncome } : i)
-      })),
+    // Accounts
+    addAccount: (acc) => {
+      set((state) => ({ accounts: [...state.accounts, acc] }));
+      api.post('/api/accounts', acc);
+    },
+    deleteAccount: (id) => {
+      set((state) => ({ accounts: state.accounts.filter(a => a.id !== id) }));
+      api.del(`/api/accounts/${id}`);
+    },
+    updateAccount: (id, updatedAcc) => {
+      const full = get().accounts.find(a => a.id === id);
+      set((state) => ({ accounts: state.accounts.map(a => a.id === id ? { ...a, ...updatedAcc } : a) }));
+      if (full) api.put(`/api/accounts/${id}`, { ...full, ...updatedAcc });
+    },
 
-      deleteProject: (id) => set((state) => ({ projects: state.projects.filter(p => p.id !== id) })),
-      updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
-      setSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
-      receiveReceivable: (receivableId, toAccountId, amount) => set((state) => {
-        const receivable = state.accounts.find(a => a.id === receivableId);
-        if (!receivable) return state;
+    // Debts
+    addDebt: (debt) => {
+      set((state) => ({ debts: [...state.debts, debt] }));
+      api.post('/api/debts', debt);
+    },
+    deleteDebt: (id) => {
+      set((state) => ({ debts: state.debts.filter(d => d.id !== id) }));
+      api.del(`/api/debts/${id}`);
+    },
+    updateDebt: (id, updatedDebt) => {
+      const full = get().debts.find(d => d.id === id);
+      set((state) => ({ debts: state.debts.map(d => d.id === id ? { ...d, ...updatedDebt } : d) }));
+      if (full) api.put(`/api/debts/${id}`, { ...full, ...updatedDebt });
+    },
 
-        const txn: Transaction = {
-          id: crypto.randomUUID(),
-          accountId: toAccountId,
-          amount,
-          type: 'income',
-          category: 'Receivable Payment',
-          description: `Payment received from ${receivable.name}`,
-          date: new Date().toISOString().split('T')[0],
-          currency: receivable.currency,
-          createdAt: new Date().toISOString()
-        };
+    // Goals
+    addGoal: (goal) => {
+      set((state) => ({ goals: [...state.goals, goal] }));
+      api.post('/api/goals', goal);
+    },
+    deleteGoal: (id) => {
+      set((state) => ({ goals: state.goals.filter(g => g.id !== id) }));
+      api.del(`/api/goals/${id}`);
+    },
+    updateGoal: (id, updatedGoal) => {
+      const full = get().goals.find(g => g.id === id);
+      set((state) => ({ goals: state.goals.map(g => g.id === id ? { ...g, ...updatedGoal } : g) }));
+      if (full) api.put(`/api/goals/${id}`, { ...full, ...updatedGoal });
+    },
 
-        // Create a balancing expense on the receivable account to zero it out
-        const balancingTxn: Transaction = {
-          id: crypto.randomUUID(),
-          accountId: receivableId,
-          amount,
-          type: 'expense',
-          category: 'Receivable Settled',
-          description: `Settled and moved to ${state.accounts.find(a => a.id === toAccountId)?.name}`,
-          date: new Date().toISOString().split('T')[0],
-          currency: receivable.currency,
-          createdAt: new Date().toISOString()
-        };
+    // Incomes
+    addIncome: (income) => {
+      set((state) => ({ incomes: [...state.incomes, income] }));
+      api.post('/api/incomes', income);
+    },
+    deleteIncome: (id) => {
+      set((state) => ({ incomes: state.incomes.filter(i => i.id !== id) }));
+      api.del(`/api/incomes/${id}`);
+    },
+    updateIncome: (id, updatedIncome) => {
+      const full = get().incomes.find(i => i.id === id);
+      set((state) => ({ incomes: state.incomes.map(i => i.id === id ? { ...i, ...updatedIncome } : i) }));
+      if (full) api.put(`/api/incomes/${id}`, { ...full, ...updatedIncome });
+    },
 
-        return {
-          transactions: [txn, balancingTxn, ...state.transactions]
-        };
-      }),
-      updateProjectStatus: (id, status) => set((state) => ({
-        projects: state.projects.map(p => p.id === id ? { ...p, status } : p)
-      })),
-      updateProject: (updatedProject) => set((state) => ({
-        projects: state.projects.map(p => p.id === updatedProject.id ? updatedProject : p)
-      })),
+    // Projects (local-only for now)
+    deleteProject: (id) => set((state) => ({ projects: state.projects.filter(p => p.id !== id) })),
+    updateProjectStatus: (id, status) => set((state) => ({
+      projects: state.projects.map(p => p.id === id ? { ...p, status } : p)
+    })),
+    updateProject: (updatedProject) => set((state) => ({
+      projects: state.projects.map(p => p.id === updatedProject.id ? updatedProject : p)
+    })),
 
-      resetToRealData: () => set({
-        transactions: [],
-        expenses: [
-          { id: "rec_001", name: "Rent", budgeted: 12500, spent: 0, category: "Housing" },
-          { id: "rec_002", name: "Travel", budgeted: 7500, spent: 0, category: "Transport" },
-          { id: "rec_003", name: "Basic Living Expenses", budgeted: 7500, spent: 0, category: "Food & Dining" }
-        ],
-        debts: [
-          { id: "debt_001", name: "Alumol", total: 498326, balance: 498326, rate: 0, minPayment: 0, notes: "Personal debt — priority payoff", color: "#E24B4A" },
-          { id: "debt_002", name: "Ikaka Gold", total: 770000, balance: 770000, rate: 0, minPayment: 0, notes: "Original ₹5,50,000 + Gold Sold ₹2,20,000. Sold 2 pavan gold on his behalf.", color: "#EF9F27" },
-          { id: "debt_003", name: "Vappa", total: 211000, balance: 211000, rate: 0, minPayment: 0, notes: "Family debt", color: "#7F77DD" },
-          { id: "debt_004", name: "Fayiz", total: 125000, balance: 125000, rate: 0, minPayment: 0, notes: "Personal loan", color: "#378ADD" },
-          { id: "debt_005", name: "Azeezka", total: 20000, balance: 20000, rate: 0, minPayment: 0, notes: "Small personal debt — clear first (snowball)", color: "#1D9E75" },
-          { id: "debt_006", name: "Kamru Zaman", total: 70000, balance: 70000, rate: 0, minPayment: 0, notes: "Personal debt", color: "#D85A30" },
-          { id: "debt_007", name: "Ayishatha", total: 125000, balance: 125000, rate: 0, minPayment: 0, notes: "5,000 AED × 25 = ₹1,25,000", color: "#639922" },
-          { id: "debt_008", name: "Mummy", total: 200000, balance: 200000, rate: 0, minPayment: 0, notes: "8,000 AED × 25 = ₹2,00,000", color: "#E24B4A" }
-        ],
-        goals: [
-          { id: "goal_001", name: "Visa Fine", target: 400000, saved: 0, deadline: "2025-12-31" },
-          { id: "goal_002", name: "Visa Processing Expenses", target: 175000, saved: 0, deadline: "2025-12-31" },
-          { id: "goal_003", name: "Full Debt Freedom", target: 1579326, saved: 0, deadline: "2027-12-31" }
-        ],
-        accounts: [
-          { id: "acc_001", name: "Ayisha Savings", institution: "Friend — Ayisha", type: "savings", currency: "INR", openingBalance: 0, color: "#7F77DD", createdAt: new Date().toISOString(), notes: "Savings kept with friend Ayisha — INR", tag: "trusted-hold", icon: "piggy" },
-          { id: "acc_002", name: "UAE Cash Wallet", institution: "Cash", type: "cash", currency: "AED", openingBalance: 0, color: "#EF9F27", createdAt: new Date().toISOString(), isDefault: true, notes: "Physical cash on hand in UAE — AED", tag: "cash", icon: "wallet" }
-        ],
-        incomes: [
-          { id: "inc_001", name: "Zorx", type: "Business", status: "active", currency: "AED", expectedMonthly: 0, actualThisMonth: 0, notes: "Primary income — Zorx. Add monthly amount.", color: "#1D9E75", icon: "briefcase", linkedAccountId: "acc_002" },
-          { id: "inc_002", name: "Personal Web Development — UAE", type: "Freelance", status: "active", currency: "AED", expectedMonthly: 0, actualThisMonth: 0, notes: "Web dev projects from UAE clients. Log per project.", color: "#378ADD", icon: "code", linkedAccountId: "acc_002" },
-          { id: "inc_003", name: "Freelance Marketing Work", type: "Freelance", status: "active", currency: "AED", expectedMonthly: 0, actualThisMonth: 0, notes: "Marketing freelance — UAE based", color: "#EF9F27", icon: "megaphone", linkedAccountId: "acc_002" },
-          { id: "inc_004", name: "Web Development Projects — India", type: "Freelance", status: "active", currency: "INR", expectedMonthly: 0, actualThisMonth: 0, notes: "Web dev projects from India clients. INR income.", color: "#7F77DD", icon: "code", linkedAccountId: "acc_001" },
-          { id: "inc_005", name: "More income streams coming soon...", type: "placeholder", status: "coming_soon", currency: null, expectedMonthly: 0, actualThisMonth: 0, notes: "Tap + to add a new income stream", color: "#444", icon: "plus", linkedAccountId: "" }
-        ],
-        settings: {
-          currency: 'INR',
-          secondaryCurrency: 'AED',
-          aedToInr: 25,
-          theme: 'dark',
-          name: 'Your Name',
-          accentColor: '#10b981',
-          onboarded: true,
-          migrated_real_data: true,
-          apiKey: '',
-        }
-      })
+    // Settings
+    updateSettings: (newSettings) => {
+      set((state) => ({ settings: { ...state.settings, ...newSettings } }));
+      api.put('/api/settings', newSettings);
+    },
+    setSettings: (newSettings) => {
+      set((state) => ({ settings: { ...state.settings, ...newSettings } }));
+      api.put('/api/settings', newSettings);
+    },
+
+    // Receivable
+    receiveReceivable: (receivableId, toAccountId, amount) => set((state) => {
+      const receivable = state.accounts.find(a => a.id === receivableId);
+      if (!receivable) return state;
+      const txn: Transaction = {
+        id: crypto.randomUUID(), accountId: toAccountId, amount, type: 'income',
+        category: 'Receivable Payment', description: `Payment received from ${receivable.name}`,
+        date: new Date().toISOString().split('T')[0], currency: receivable.currency,
+        createdAt: new Date().toISOString()
+      };
+      const balancingTxn: Transaction = {
+        id: crypto.randomUUID(), accountId: receivableId, amount, type: 'expense',
+        category: 'Receivable Settled', description: `Settled and moved to ${state.accounts.find(a => a.id === toAccountId)?.name}`,
+        date: new Date().toISOString().split('T')[0], currency: receivable.currency,
+        createdAt: new Date().toISOString()
+      };
+      api.post('/api/transactions', txn);
+      api.post('/api/transactions', balancingTxn);
+      return { transactions: [txn, balancingTxn, ...state.transactions] };
     }),
-    {
-      name: 'financeOS_data',
-    }
-  )
+
+    // Reset — seeds from API
+    resetToRealData: () => {
+      fetch('/api/seed').catch(console.error);
+    },
+  })
 );

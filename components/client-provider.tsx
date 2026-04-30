@@ -1,20 +1,63 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { runMigration } from "@/lib/migration";
+import { useFinanceStore } from "@/lib/store";
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
+  const hydrate = useFinanceStore((s) => s.hydrate);
 
   useEffect(() => {
-    runMigration();
-    setMounted(true);
-  }, []);
+    async function loadData() {
+      try {
+        // Init tables (idempotent)
+        await fetch('/api/init-db');
 
-  // We always render children so Server Components (like the root redirect) execute properly.
-  // The opacity trick prevents hydration flashes while still preserving the DOM tree.
+        // Fetch all data in parallel
+        const [debts, accounts, transactions, incomes, goals, expenses, settings] = await Promise.all([
+          fetch('/api/debts').then(r => r.json()),
+          fetch('/api/accounts').then(r => r.json()),
+          fetch('/api/transactions').then(r => r.json()),
+          fetch('/api/incomes').then(r => r.json()),
+          fetch('/api/goals').then(r => r.json()),
+          fetch('/api/expenses').then(r => r.json()),
+          fetch('/api/settings').then(r => r.json()),
+        ]);
+
+        // If DB is empty, seed it then re-fetch
+        if (debts.length === 0 && accounts.length === 0) {
+          await fetch('/api/seed');
+          const [debts2, accounts2, transactions2, incomes2, goals2, expenses2, settings2] = await Promise.all([
+            fetch('/api/debts').then(r => r.json()),
+            fetch('/api/accounts').then(r => r.json()),
+            fetch('/api/transactions').then(r => r.json()),
+            fetch('/api/incomes').then(r => r.json()),
+            fetch('/api/goals').then(r => r.json()),
+            fetch('/api/expenses').then(r => r.json()),
+            fetch('/api/settings').then(r => r.json()),
+          ]);
+          hydrate({
+            debts: debts2, accounts: accounts2, transactions: transactions2,
+            incomes: incomes2, goals: goals2, expenses: expenses2,
+            settings: { ...useFinanceStore.getState().settings, ...settings2 },
+          });
+        } else {
+          hydrate({
+            debts, accounts, transactions, incomes, goals, expenses,
+            settings: { ...useFinanceStore.getState().settings, ...settings },
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load data from DB:', error);
+      }
+      setMounted(true);
+    }
+
+    loadData();
+  }, [hydrate]);
+
   return (
-    <div className={mounted ? "opacity-100" : "opacity-0"}>
+    <div className={mounted ? "opacity-100 transition-opacity duration-300" : "opacity-0"}>
       {children}
     </div>
   );
