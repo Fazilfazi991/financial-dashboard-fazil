@@ -40,7 +40,8 @@ export default function AIAdvisorPage() {
   ];
 
   const handleSend = async (content: string = input) => {
-    if (!content.trim() || !settings.apiKey) return;
+    const apiKey = (settings as any).apiKey;
+    if (!content.trim() || !apiKey) return;
 
     const newMessages: Message[] = [...messages, { role: 'user', content }];
     setMessages(newMessages);
