@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { AddGoalDialog } from "@/components/add-goal-dialog";
 
 export default function GoalsPage() {
-  const { goals, settings } = useFinanceStore();
+  const { goals, settings, deleteGoal } = useFinanceStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
