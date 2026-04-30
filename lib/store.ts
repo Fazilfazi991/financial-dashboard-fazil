@@ -78,6 +78,9 @@ export interface Transaction {
   date: string;
   currency: string;
   createdAt: string;
+  incomeStreamId?: string;
+  notes?: string;
+  tags?: string[];
 }
 interface FinanceState {
   accounts: Account[];
