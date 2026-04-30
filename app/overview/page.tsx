@@ -5,7 +5,24 @@ import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { TrendingDown, ShieldAlert, Zap, Calendar, TrendingUp, ArrowUpRight } from "lucide-react";
+import { 
+  TrendingDown, 
+  ShieldAlert, 
+  Zap, 
+  Calendar, 
+  TrendingUp, 
+  ArrowUpRight, 
+  Wallet,
+  ArrowDownLeft,
+  PiggyBank,
+  CheckCircle2
+} from "lucide-react";
+
+const ICON_MAP: Record<string, any> = {
+  piggy: PiggyBank,
+  wallet: Wallet,
+  'arrow-in': ArrowDownLeft,
+};
 
 export default function OverviewPage() {
   const { 
@@ -13,6 +30,8 @@ export default function OverviewPage() {
     goals, 
     expenses,
     transactions,
+    accounts,
+    incomes,
     settings,
     resetToRealData
   } = useFinanceStore();
@@ -35,8 +54,6 @@ export default function OverviewPage() {
   const freedomNumber = totalDebt + totalVisaGoal;
   
   const monthlyBurn = expenses.reduce((sum, e) => sum + Number(e.budgeted), 0);
-  
-  // Simple payoff calculation
   const monthsToFreedom = extraPayment > 0 ? (freedomNumber / extraPayment).toFixed(1) : "∞";
 
   const today = new Date().toISOString().split('T')[0];
@@ -44,8 +61,27 @@ export default function OverviewPage() {
   const todayIncome = todayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
   const todayExpense = todayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
 
+  const getAccountBalance = (accId: string) => {
+    const acc = accounts.find(a => a.id === accId);
+    if (!acc) return 0;
+    const txns = transactions.filter(t => t.accountId === accId || t.toAccountId === accId);
+    let balance = Number(acc.openingBalance || 0);
+    txns.forEach(t => {
+      const amt = Number(t.amount);
+      if (t.type === 'income' && t.accountId === accId) balance += amt;
+      else if (t.type === 'expense' && t.accountId === accId) balance -= amt;
+      else if (t.type === 'transfer') {
+        if (t.accountId === accId) balance -= amt;
+        if (t.toAccountId === accId) balance += amt;
+      }
+    });
+    return balance;
+  };
+
+  const receivables = accounts.filter(a => a.type === 'receivable');
+
   return (
-    <div className="space-y-12 pb-20">
+    <div className="space-y-12 pb-32">
       {/* Section A: Freedom Number Hero */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -61,11 +97,80 @@ export default function OverviewPage() {
             {fmtAED(toAED(freedomNumber))}
           </div>
           <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
-            This is the number that stands between you and a fresh start. Every decision from here on is about bringing this number to zero.
+            Every rupee earned above expenses clears 0.06% of your total debt.
           </p>
         </div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(239,68,68,0.1)_0%,transparent_70%)] pointer-events-none" />
       </motion.div>
+
+      {/* Section: Wallets Row */}
+      <div className="space-y-6">
+        <h2 className="text-xl font-bold px-1 flex items-center gap-2">
+          <Wallet className="w-5 h-5 text-primary" /> Active Wallets
+        </h2>
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-1 px-1">
+          {accounts.filter(a => a.type !== 'receivable').map(account => {
+            const Icon = ICON_MAP[account.icon || ''] || Wallet;
+            const balance = getAccountBalance(account.id);
+            return (
+              <div key={account.id} className="glass min-w-[280px] p-6 rounded-3xl shrink-0">
+                <div className="flex justify-between items-center mb-4">
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${account.color}15`, color: account.color }}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{account.tag}</span>
+                </div>
+                <div className="text-lg font-black tabular">
+                  {account.currency === 'INR' ? formatCurrency(balance, 'INR') : fmtAED(balance)}
+                </div>
+                <div className="text-[10px] font-bold text-muted-foreground mt-1">
+                  {account.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Section: Money Coming In */}
+      {receivables.length > 0 && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold px-1 flex items-center gap-2">
+            <ArrowDownLeft className="w-5 h-5 text-primary" /> Money Coming In
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {receivables.map(acc => {
+              const amount = getAccountBalance(acc.id);
+              return (
+                <div key={acc.id} className="glass p-8 rounded-[2.5rem] bg-primary/5 border-primary/20 relative group overflow-hidden">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                      <ArrowDownLeft className="w-6 h-6" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] font-bold text-primary uppercase tracking-widest">Expected Soon</div>
+                      <div className="text-xs font-bold text-muted-foreground">Due in 5 days</div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase">{acc.institution}</div>
+                    <h3 className="text-xl font-black">{acc.name}</h3>
+                  </div>
+                  <div className="mt-6 text-3xl font-black text-primary tabular">
+                    {fmtAED(amount)}
+                  </div>
+                  <button className="w-full mt-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-5 h-5" />
+                    Mark Received
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Section B: 4 Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -99,31 +204,6 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* Section C: Debt Breakdown */}
-      <div className="space-y-6">
-        <div className="flex justify-between items-end">
-          <h2 className="text-xl font-bold tracking-tight px-1">Debt Portfolio</h2>
-          <div className="text-xs text-muted-foreground font-medium">8 Active Debts</div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {debts.map(debt => (
-            <div key={debt.id} className="glass p-5 rounded-2xl group hover:border-primary/30 transition-all">
-              <div className="flex justify-between items-start mb-3">
-                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{debt.name}</div>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: debt.color }} />
-              </div>
-              <div className="text-lg font-bold tabular">{formatCurrency(debt.balance, 'INR')}</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">{fmtAED(toAED(debt.balance))}</div>
-              {debt.name === "Ikaka Gold" && (
-                <div className="mt-3 px-2 py-1 bg-amber-500/10 text-amber-500 text-[9px] font-black uppercase rounded text-center tracking-tighter">
-                  Gold Offset Applied
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Section D: Big Picture Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="glass p-10 rounded-[2.5rem] bg-secondary/20">
@@ -141,16 +221,6 @@ export default function OverviewPage() {
               <span className="text-primary uppercase tracking-wider">Grand Total</span>
               <span className="text-primary">{formatCurrency(freedomNumber, 'INR')}</span>
             </div>
-            <div className="flex justify-between pt-1 text-xs text-muted-foreground">
-              <span>AED Equivalent</span>
-              <span>{fmtAED(toAED(freedomNumber))}</span>
-            </div>
-          </div>
-
-          <div className="mt-10 p-6 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
-            <p className="text-xs text-amber-500 leading-relaxed italic">
-              &quot;At current monthly expenses of {formatCurrency(monthlyBurn, 'INR')}, you need to earn that minimum just to survive. Every rupee above that goes toward the goal.&quot;
-            </p>
           </div>
         </div>
 
@@ -159,15 +229,11 @@ export default function OverviewPage() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold">Payoff Momentum</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Every ₹1,000 you earn above your monthly expenses clears <span className="text-primary font-bold">0.06%</span> of your total debt.
+                Every ₹1,000 extra clears <span className="text-primary font-bold">0.06%</span> of total debt.
               </p>
             </div>
             <div className="space-y-6">
               <div className="space-y-3">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
-                  <span>Monthly Surplus</span>
-                  <span className="text-primary">{formatCurrency(extraPayment, 'INR')}</span>
-                </div>
                 <input 
                   type="range" 
                   min="0" 
@@ -179,43 +245,10 @@ export default function OverviewPage() {
                 />
               </div>
               <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl text-center">
-                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Time to Freedom</div>
                 <div className="text-3xl font-black text-primary tabular">{monthsToFreedom} <span className="text-xs">months</span></div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Section E: Today's Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass p-8 rounded-[2.5rem]">
-          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" /> Today&apos;s Snapshot
-          </h3>
-          <div className="grid grid-cols-3 gap-6 text-center">
-            <div className="space-y-1">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Income</div>
-              <div className="text-xl font-bold text-primary tabular">+{formatCurrency(todayIncome, 'INR')}</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Expense</div>
-              <div className="text-xl font-bold text-destructive tabular">-{formatCurrency(todayExpense, 'INR')}</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net</div>
-              <div className={cn("text-xl font-bold tabular", (todayIncome - todayExpense) >= 0 ? "text-primary" : "text-destructive")}>
-                {formatCurrency(todayIncome - todayExpense, 'INR')}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="glass p-8 rounded-[2.5rem] bg-primary/5 border-primary/20 flex flex-col justify-center items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-            <ArrowUpRight className="w-6 h-6 text-primary" />
-          </div>
-          <h4 className="font-bold mb-1">Stay Focused</h4>
-          <p className="text-xs text-muted-foreground">Every rupee saved is a step toward your freedom number.</p>
         </div>
       </div>
     </div>

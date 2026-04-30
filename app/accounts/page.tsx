@@ -1,16 +1,30 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency } from "@/lib/utils";
-import { Plus, MoreVertical, Landmark } from "lucide-react";
+import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
+import { 
+  Plus, 
+  Wallet, 
+  PiggyBank, 
+  ArrowDownLeft, 
+  MoreHorizontal, 
+  CreditCard,
+  Banknote,
+  ShieldCheck
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AccountDialog } from "@/components/add-account-dialog";
-import { Edit2 } from "lucide-react";
+
+const ICON_MAP: Record<string, any> = {
+  piggy: PiggyBank,
+  wallet: Wallet,
+  'arrow-in': ArrowDownLeft,
+};
 
 export default function AccountsPage() {
-  const { accounts, transactions, settings, rates, deleteAccount } = useFinanceStore();
+  const { accounts, transactions, settings, deleteAccount } = useFinanceStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -18,12 +32,6 @@ export default function AccountsPage() {
   }, []);
 
   if (!mounted) return null;
-
-  const convert = (amount: number, fromCurrency: string) => {
-    if (fromCurrency === settings.currency) return amount;
-    const usdAmount = amount / (rates.rates[fromCurrency] || 1);
-    return usdAmount * (rates.rates[settings.currency] || 1);
-  };
 
   const getAccountBalance = (accId: string) => {
     const acc = accounts.find(a => a.id === accId);
@@ -42,99 +50,97 @@ export default function AccountsPage() {
     return balance;
   };
 
-  const totalBalance = accounts.reduce((sum, a) => sum + convert(getAccountBalance(a.id), a.currency), 0);
+  const totalInINR = accounts.reduce((sum, a) => {
+    const bal = getAccountBalance(a.id);
+    return sum + (a.currency === 'INR' ? bal : bal * settings.aedToInr);
+  }, 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-32">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">Accounts & Wallets</h1>
-          <p className="text-muted-foreground mt-1">Manage your financial institutions and balances.</p>
+          <h1 className="text-4xl font-bold tracking-tight">Wallets & Assets</h1>
+          <p className="text-muted-foreground mt-1 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            Managing {accounts.length} storage locations.
+          </p>
         </div>
         <div className="flex items-center justify-between w-full sm:w-auto gap-4">
           <div className="text-left sm:text-right">
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total Balance</div>
-            <div className="text-2xl font-bold tabular">{formatCurrency(totalBalance, settings.currency)}</div>
+            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Assets (INR)</div>
+            <div className="text-3xl font-black tabular">{formatCurrency(totalInINR, 'INR')}</div>
           </div>
           <AccountDialog />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {accounts.map((acc, index) => {
-          const balance = getAccountBalance(acc.id);
-          const baseBalance = convert(balance, acc.currency);
-          
+        {accounts.map((account, index) => {
+          const balance = getAccountBalance(account.id);
+          const Icon = ICON_MAP[account.icon || ''] || Wallet;
+          const isReceivable = account.type === 'receivable';
+
           return (
             <motion.div
-              key={acc.id}
+              key={account.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-              className="glass p-6 rounded-3xl relative overflow-hidden group border-l-4"
-              style={{ borderLeftColor: acc.color }}
+              transition={{ delay: index * 0.1 }}
+              className={cn(
+                "glass p-8 rounded-[2.5rem] relative group overflow-hidden border-t-4",
+                isReceivable ? "bg-primary/5 border-primary" : ""
+              )}
+              style={{ borderTopColor: isReceivable ? undefined : account.color }}
             >
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                    <Landmark className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{acc.institution}</div>
-                    <div className="font-bold">{acc.name}</div>
-                  </div>
+              <div className="flex justify-between items-start mb-8">
+                <div 
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ backgroundColor: `${account.color}15`, color: account.color }}
+                >
+                  <Icon className="w-7 h-7" />
                 </div>
                 <div className="flex gap-2">
-                  <AccountDialog account={acc}>
-                    <button className="text-muted-foreground hover:text-foreground transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </AccountDialog>
+                  {account.tag && (
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                      isReceivable ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                    )}>
+                      {account.tag}
+                    </span>
+                  )}
                   <button 
-                    onClick={() => { if(confirm('Delete this account? This will NOT delete its transactions.')) deleteAccount(acc.id) }}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    onClick={() => { if(confirm(`Remove ${account.name}?`)) deleteAccount(account.id) }}
+                    className="p-2 rounded-xl bg-secondary opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive hover:text-white"
                   >
-                    <Plus className="w-5 h-5 rotate-45" />
+                    <Plus className="w-4 h-4 rotate-45" />
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <div className="text-2xl font-bold tabular tracking-tight">
-                  {acc.currency} {balance.toLocaleString()}
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{account.institution}</div>
+                <h3 className="text-xl font-black">{account.name}</h3>
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-white/5">
+                <div className="text-3xl font-black tabular">
+                  {account.currency === 'INR' ? formatCurrency(balance, 'INR') : fmtAED(balance)}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  ≈ {formatCurrency(baseBalance, settings.currency)}
+                <div className="text-sm font-bold text-muted-foreground mt-1">
+                  {account.currency === 'INR' ? fmtAED(toAED(balance)) : formatCurrency(balance * settings.aedToInr, 'INR')}
                 </div>
               </div>
 
-              <div className="mt-6 flex gap-2">
-                <button className="flex-1 bg-secondary text-secondary-foreground text-xs font-semibold py-2 rounded-xl hover:bg-secondary/80 transition-colors">
-                  Transfer
+              {isReceivable && (
+                <button className="w-full mt-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] transition-all shadow-lg shadow-primary/20">
+                  Mark Received
                 </button>
-                <button className="flex-1 bg-secondary text-secondary-foreground text-xs font-semibold py-2 rounded-xl hover:bg-secondary/80 transition-colors">
-                  Details
-                </button>
-              </div>
+              )}
+              
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mb-16 -mr-16 pointer-events-none" />
             </motion.div>
           );
         })}
-
-        {accounts.length === 0 && (
-          <div className="col-span-full py-20 flex flex-col items-center justify-center text-center glass rounded-3xl border-dashed">
-            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-              <Landmark className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">No accounts found</h3>
-            <p className="text-muted-foreground max-w-xs mx-auto mt-2">
-              Add your bank accounts, wallets, or cash to start tracking your net worth.
-            </p>
-            <button className="mt-6 flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 rounded-xl font-semibold shadow-lg shadow-primary/20">
-              <Plus className="w-4 h-4" />
-              Add First Account
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

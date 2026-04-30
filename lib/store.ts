@@ -41,17 +41,22 @@ export interface Goal {
   name: string;
   target: number;
   saved: number;
+  deadline?: string;
 }
 
 export interface Account {
   id: string;
   name: string;
   institution: string;
-  type: string;
+  type: 'savings' | 'current' | 'credit' | 'cash' | 'investment' | 'receivable';
   currency: string;
   openingBalance: number;
   color: string;
   createdAt: string;
+  isDefault?: boolean;
+  notes?: string;
+  tag?: string;
+  icon?: string;
 }
 
 export interface Transaction {
@@ -66,15 +71,14 @@ export interface Transaction {
   currency: string;
   createdAt: string;
 }
-
 interface FinanceState {
-  debts: Debt[];
-  incomes: Income[];
-  projects: Project[];
-  expenses: Expense[];
-  goals: Goal[];
   accounts: Account[];
   transactions: Transaction[];
+  debts: Debt[];
+  goals: Goal[];
+  expenses: Expense[];
+  incomes: Income[];
+  projects: Project[];
   rates: {
     base: string;
     rates: Record<string, number>;
@@ -114,18 +118,19 @@ interface FinanceState {
   updateProject: (project: Project) => void;
   setSettings: (settings: Partial<FinanceState['settings']>) => void;
   resetToRealData: () => void;
+  receiveReceivable: (receivableId: string, toAccountId: string, amount: number) => void;
 }
 
 export const useFinanceStore = create<FinanceState>()(
   persist(
     (set) => ({
-      debts: [],
-      incomes: [],
-      projects: [],
-      expenses: [],
-      goals: [],
       accounts: [],
       transactions: [],
+      debts: [],
+      goals: [],
+      expenses: [],
+      incomes: [],
+      projects: [],
       rates: { base: 'USD', rates: { INR: 83.5, AED: 3.67, EUR: 0.92, USD: 1 }, updated: 0 },
       settings: {
         currency: 'INR',
@@ -157,6 +162,39 @@ export const useFinanceStore = create<FinanceState>()(
       deleteProject: (id) => set((state) => ({ projects: state.projects.filter(p => p.id !== id) })),
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
       setSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
+      receiveReceivable: (receivableId, toAccountId, amount) => set((state) => {
+        const receivable = state.accounts.find(a => a.id === receivableId);
+        if (!receivable) return state;
+
+        const txn: Transaction = {
+          id: crypto.randomUUID(),
+          accountId: toAccountId,
+          amount,
+          type: 'income',
+          category: 'Receivable Payment',
+          description: `Payment received from ${receivable.name}`,
+          date: new Date().toISOString().split('T')[0],
+          currency: receivable.currency,
+          createdAt: new Date().toISOString()
+        };
+
+        // Create a balancing expense on the receivable account to zero it out
+        const balancingTxn: Transaction = {
+          id: crypto.randomUUID(),
+          accountId: receivableId,
+          amount,
+          type: 'expense',
+          category: 'Receivable Settled',
+          description: `Settled and moved to ${state.accounts.find(a => a.id === toAccountId)?.name}`,
+          date: new Date().toISOString().split('T')[0],
+          currency: receivable.currency,
+          createdAt: new Date().toISOString()
+        };
+
+        return {
+          transactions: [txn, balancingTxn, ...state.transactions]
+        };
+      }),
       updateProjectStatus: (id, status) => set((state) => ({
         projects: state.projects.map(p => p.id === id ? { ...p, status } : p)
       })),
@@ -187,9 +225,16 @@ export const useFinanceStore = create<FinanceState>()(
           { id: "goal_003", name: "Full Debt Freedom", target: 1579326, saved: 0, deadline: "2027-12-31" }
         ],
         accounts: [
-          { id: "acc_001", name: "Primary Savings", institution: "Bank", type: "savings", currency: "INR", openingBalance: 0, color: "#1D9E75", createdAt: new Date().toISOString() },
-          { id: "acc_002", name: "Cash Wallet", institution: "Cash", type: "cash", currency: "INR", openingBalance: 0, color: "#EF9F27", createdAt: new Date().toISOString() },
-          { id: "acc_003", name: "UAE Account", institution: "UAE Bank", type: "current", currency: "AED", openingBalance: 0, color: "#378ADD", createdAt: new Date().toISOString() }
+          { id: "acc_001", name: "Ayisha Savings", institution: "Friend — Ayisha", type: "savings", currency: "INR", openingBalance: 0, color: "#7F77DD", createdAt: new Date().toISOString(), notes: "Savings kept with friend Ayisha — INR", tag: "trusted-hold", icon: "piggy" },
+          { id: "acc_002", name: "UAE Cash Wallet", institution: "Cash", type: "cash", currency: "AED", openingBalance: 0, color: "#EF9F27", createdAt: new Date().toISOString(), isDefault: true, notes: "Physical cash on hand in UAE — AED", tag: "cash", icon: "wallet" },
+          { id: "acc_003", name: "Zorx — Owes Me", institution: "Zorx", type: "receivable", currency: "AED", openingBalance: 0, color: "#1D9E75", createdAt: new Date().toISOString(), notes: "Amount Zorx owes me — tracked as incoming receivable", tag: "receivable", icon: "arrow-in" }
+        ],
+        incomes: [
+          { id: "inc_001", name: "Zorx", type: "Business", status: "active", currency: "AED", expectedMonthly: 0, actualThisMonth: 0, notes: "Primary income — Zorx. Add monthly amount.", color: "#1D9E75", icon: "briefcase", linkedAccountId: "acc_002" },
+          { id: "inc_002", name: "Personal Web Development — UAE", type: "Freelance", status: "active", currency: "AED", expectedMonthly: 0, actualThisMonth: 0, notes: "Web dev projects from UAE clients. Log per project.", color: "#378ADD", icon: "code", linkedAccountId: "acc_002" },
+          { id: "inc_003", name: "Freelance Marketing Work", type: "Freelance", status: "active", currency: "AED", expectedMonthly: 0, actualThisMonth: 0, notes: "Marketing freelance — UAE based", color: "#EF9F27", icon: "megaphone", linkedAccountId: "acc_002" },
+          { id: "inc_004", name: "Web Development Projects — India", type: "Freelance", status: "active", currency: "INR", expectedMonthly: 0, actualThisMonth: 0, notes: "Web dev projects from India clients. INR income.", color: "#7F77DD", icon: "code", linkedAccountId: "acc_001" },
+          { id: "inc_005", name: "More income streams coming soon...", type: "placeholder", status: "coming_soon", currency: null, expectedMonthly: 0, actualThisMonth: 0, notes: "Tap + to add a new income stream", color: "#444", icon: "plus", linkedAccountId: "" }
         ],
         settings: {
           currency: 'INR',

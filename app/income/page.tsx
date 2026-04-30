@@ -1,12 +1,29 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { Plus, TrendingUp, DollarSign, Briefcase, Calendar } from "lucide-react";
-import { motion } from "framer-motion";
+import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Briefcase, 
+  Code, 
+  Megaphone, 
+  Plus, 
+  ArrowUpRight, 
+  TrendingUp, 
+  ShieldCheck,
+  PlusCircle,
+  HelpCircle
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const ICON_MAP: Record<string, any> = {
+  briefcase: Briefcase,
+  code: Code,
+  megaphone: Megaphone,
+  plus: Plus
+};
 
 export default function IncomePage() {
   const { incomes, transactions, settings } = useFinanceStore();
@@ -18,169 +35,158 @@ export default function IncomePage() {
 
   if (!mounted) return null;
 
-  const thisMonth = new Date().getMonth();
-  const thisYear = new Date().getFullYear();
-
-  // All Income Transactions
-  const incomeTransactions = transactions.filter(t => t.type === 'income');
-  const totalMonthlyActual = transactions
-    .filter(t => t.type === 'income' && new Date(t.date).getMonth() === thisMonth && new Date(t.date).getFullYear() === thisYear)
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  const totalMonthlyExpected = incomes.reduce((sum, i) => sum + Number(i.expected), 0);
-
-  // Daily Tracker Logic
-  const dailyData: Record<string, { income: number, expense: number }> = {};
-  transactions.forEach(t => {
-    const date = t.date;
-    if (!dailyData[date]) dailyData[date] = { income: 0, expense: 0 };
-    if (t.type === 'income') dailyData[date].income += Number(t.amount);
-    if (t.type === 'expense') dailyData[date].expense += Number(t.amount);
+  // Calculate actuals per stream
+  const streamsWithActuals = incomes.map(stream => {
+    const actual = transactions
+      .filter(t => t.type === 'income' && t.incomeStreamId === stream.id)
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    return { ...stream, actualThisMonth: actual };
   });
 
-  const sortedDays = Object.entries(dailyData).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+  const totalAED = streamsWithActuals
+    .filter(s => s.currency === 'AED')
+    .reduce((sum, s) => sum + s.actualThisMonth, 0);
+
+  const totalINR = streamsWithActuals
+    .filter(s => s.currency === 'INR')
+    .reduce((sum, s) => sum + s.actualThisMonth, 0);
+
+  const combinedInAED = totalAED + (totalINR / settings.aedToInr);
+  const combinedInINR = totalINR + (totalAED * settings.aedToInr);
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 pb-32">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Income & Activity</h1>
-          <p className="text-muted-foreground mt-1">Track your earnings and daily cash flow.</p>
+          <h1 className="text-4xl font-bold tracking-tight">Income Streams</h1>
+          <p className="text-muted-foreground mt-1 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            You have 4 active income streams. Multiple streams = financial resilience.
+          </p>
         </div>
-        <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4" />
-          Add Source
-        </button>
+        
+        <div className="glass px-8 py-4 rounded-3xl text-right">
+          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-1">Total This Month</div>
+          <div className="text-xl font-bold tabular">
+            {fmtAED(totalAED)} <span className="text-muted-foreground font-medium mx-1">+</span> {formatCurrency(totalINR, 'INR')}
+          </div>
+          <div className="flex justify-end gap-3 mt-1 opacity-60 text-[10px] font-bold">
+            <span>≈ {fmtAED(combinedInAED)}</span>
+            <span>≈ {formatCurrency(combinedInINR, 'INR')}</span>
+          </div>
+        </div>
       </div>
 
-      <Tabs defaultValue="sources" className="w-full">
-        <TabsList className="bg-secondary/50 p-1 rounded-2xl mb-8">
-          <TabsTrigger value="sources" className="rounded-xl px-8 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Sources</TabsTrigger>
-          <TabsTrigger value="tracker" className="rounded-xl px-8 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Daily Tracker</TabsTrigger>
-          <TabsTrigger value="history" className="rounded-xl px-8 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Income History</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {streamsWithActuals.map((stream, index) => {
+          if (stream.status === 'coming_soon') return null;
+          
+          const Icon = ICON_MAP[stream.icon] || Briefcase;
+          const variance = stream.actualThisMonth - stream.expectedMonthly;
+          const isHealthy = stream.actualThisMonth >= stream.expectedMonthly || stream.expectedMonthly === 0;
 
-        <TabsContent value="sources" className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="glass p-8 rounded-[2.5rem] flex flex-col justify-between">
-              <div>
-                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Monthly Progress</div>
-                <div className="text-4xl font-black tabular tracking-tighter">{formatCurrency(totalMonthlyActual, settings.currency)}</div>
-                <div className="text-xs text-muted-foreground mt-1">Target: {formatCurrency(totalMonthlyExpected, settings.currency)}</div>
-              </div>
-              <div className="mt-8">
-                <div className="flex justify-between text-xs font-bold mb-2 uppercase tracking-widest">
-                  <span>Goal Completion</span>
-                  <span>{Math.round((totalMonthlyActual / (totalMonthlyExpected || 1)) * 100)}%</span>
-                </div>
-                <div className="h-3 w-full bg-secondary rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (totalMonthlyActual / (totalMonthlyExpected || 1)) * 100)}%` }}
-                    transition={{ duration: 1 }}
-                    className="h-full bg-primary rounded-full"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground ml-2">Defined Sources</h3>
-              {incomes.map((income, index) => {
-                const actual = transactions
-                  .filter(t => t.type === 'income' && t.description.toLowerCase().includes(income.name.toLowerCase()))
-                  .reduce((sum, t) => sum + Number(t.amount), 0);
-                
-                return (
-                  <motion.div
-                    key={income.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="glass p-6 rounded-3xl flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                        {income.type === 'freelance' ? <Briefcase className="w-6 h-6" /> : <DollarSign className="w-6 h-6" />}
-                      </div>
-                      <div>
-                        <h3 className="font-bold">{income.name}</h3>
-                        <div className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">{income.type}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold tabular">{formatCurrency(actual, settings.currency)}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">This Month</div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-              {incomes.length === 0 && (
-                <div className="py-12 text-center glass rounded-3xl border-dashed text-muted-foreground">
-                  No fixed income sources defined.
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tracker" className="space-y-4">
-          <div className="grid grid-cols-1 gap-3">
-            {sortedDays.map(([date, data], index) => (
-              <motion.div 
-                key={date}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="glass p-5 rounded-2xl flex justify-between items-center"
-              >
+          return (
+            <motion.div
+              key={stream.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="glass p-8 rounded-[2.5rem] relative group overflow-hidden border-l-4"
+              style={{ borderLeftColor: stream.color }}
+            >
+              <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-muted-foreground" />
+                  <div 
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{ backgroundColor: `${stream.color}15`, color: stream.color }}
+                  >
+                    <Icon className="w-7 h-7" />
                   </div>
                   <div>
-                    <div className="font-bold">{formatDate(date)}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Activity Summary</div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-xl">{stream.name}</h3>
+                      <span className="px-2 py-0.5 bg-secondary text-[10px] font-bold rounded uppercase tracking-wider">
+                        {stream.type}
+                      </span>
+                      <span className="text-lg">
+                        {stream.currency === 'AED' ? '🇦🇪' : '🇮🇳'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{stream.notes}</p>
                   </div>
                 </div>
-                <div className="flex gap-8">
-                  <div className="text-right">
-                    <div className="text-primary font-bold tabular">+{formatCurrency(data.income, settings.currency)}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Income</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-destructive font-bold tabular">-{formatCurrency(data.expense, settings.currency)}</div>
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Expense</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </TabsContent>
+              </div>
 
-        <TabsContent value="history" className="space-y-4">
-          <div className="glass rounded-3xl overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-secondary/30 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-                <tr>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Description</th>
-                  <th className="px-6 py-4 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {incomeTransactions.map((t, index) => (
-                  <tr key={t.id} className="hover:bg-secondary/20 transition-colors">
-                    <td className="px-6 py-4 text-sm tabular text-muted-foreground">{formatDate(t.date)}</td>
-                    <td className="px-6 py-4 text-sm font-medium">{t.description}</td>
-                    <td className="px-6 py-4 text-right font-bold text-primary tabular">+{formatCurrency(t.amount, settings.currency)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-      </Tabs>
+              <div className="grid grid-cols-2 gap-8 mb-8">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                    Expected <HelpCircle className="w-3 h-3 opacity-50" />
+                  </div>
+                  <div className="text-2xl font-black tabular">
+                    {stream.currency === 'INR' ? formatCurrency(stream.expectedMonthly, 'INR') : fmtAED(stream.expectedMonthly)}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Actual</div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl font-black tabular">
+                      {stream.currency === 'INR' ? formatCurrency(stream.actualThisMonth, 'INR') : fmtAED(stream.actualThisMonth)}
+                    </div>
+                    <div className={cn(
+                      "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter",
+                      isHealthy ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                    )}>
+                      {variance >= 0 ? `+${variance}` : variance}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <AddTransactionDialog initialType="income" initialStreamId={stream.id}>
+                  <button className="flex-1 py-4 bg-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-lg shadow-primary/20">
+                    <PlusCircle className="w-5 h-5" />
+                    Log Income
+                  </button>
+                </AddTransactionDialog>
+                <button className="w-14 h-14 bg-secondary rounded-2xl flex items-center justify-center hover:bg-secondary/80 transition-all">
+                  <ArrowUpRight className="w-6 h-6" />
+                </button>
+              </div>
+
+              {stream.actualThisMonth === 0 && (
+                <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                  <p className="text-xs font-bold text-foreground bg-background px-4 py-2 rounded-full border border-border shadow-xl">
+                    No income logged yet — tap to add your first entry
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
+
+        {/* Coming Soon Card */}
+        {incomes.filter(s => s.status === 'coming_soon').map(stream => (
+          <motion.div
+            key={stream.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass border-dashed border-2 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-primary/5 transition-all min-h-[300px]"
+          >
+            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Plus className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-bold text-muted-foreground">More income streams</h3>
+            <p className="text-sm text-muted-foreground/60 mt-1">Tap + to add a new income source</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="pt-8 border-t border-white/5 flex justify-center">
+        <button className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-all">
+          Track project-by-project income <TrendingUp className="w-4 h-4" /> Go to Pipeline
+        </button>
+      </div>
     </div>
   );
 }
