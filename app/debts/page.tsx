@@ -1,7 +1,7 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Plus, TrendingDown, Info, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -71,9 +71,6 @@ export default function DebtsPage() {
                   <div className="flex flex-col md:items-end">
                     <div className="text-2xl font-bold tabular">
                       {formatCurrency(debt.balance, 'INR')}
-                    </div>
-                    <div className="text-xs font-medium text-muted-foreground">
-                      {fmtAED(toAED(debt.balance))}
                     </div>
                   </div>
 

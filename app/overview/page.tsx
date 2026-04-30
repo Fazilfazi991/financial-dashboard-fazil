@@ -1,7 +1,7 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -90,12 +90,9 @@ export default function OverviewPage() {
       >
         <div className="relative z-10">
           <div className="text-[10px] font-bold text-destructive uppercase tracking-[0.3em] mb-4">The Freedom Number</div>
-          <h1 className="text-6xl lg:text-8xl font-black tabular tracking-tighter mb-2 text-foreground">
+          <h1 className="text-6xl lg:text-8xl font-black tabular tracking-tighter mb-8 text-foreground">
             {formatCurrency(freedomNumber, 'INR')}
           </h1>
-          <div className="text-2xl font-bold text-muted-foreground mb-8">
-            {fmtAED(toAED(freedomNumber))}
-          </div>
           <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
             Every rupee earned above expenses clears 0.06% of your total debt.
           </p>
@@ -115,11 +112,8 @@ export default function OverviewPage() {
                 </div>
                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: debt.color }} />
               </div>
-              <div className="text-xl font-black tabular">
+              <div className="text-xl font-black tabular mt-2">
                 {formatCurrency(debt.balance, 'INR')}
-              </div>
-              <div className="text-[10px] font-bold text-muted-foreground mt-1">
-                {fmtAED(toAED(debt.balance))}
               </div>
               {debt.name === "Ikaka Gold" && (
                 <div className="mt-4 py-1.5 bg-amber-500/10 rounded-lg text-center">
@@ -147,10 +141,6 @@ export default function OverviewPage() {
             <div className="flex justify-between pt-2 text-lg font-black text-primary">
               <span className="uppercase tracking-wider">Grand Total</span>
               <span>{formatCurrency(freedomNumber, 'INR')}</span>
-            </div>
-            <div className="flex justify-between pt-1 text-xs text-muted-foreground">
-              <span>AED Equivalent</span>
-              <span>{fmtAED(toAED(freedomNumber))}</span>
             </div>
           </div>
 

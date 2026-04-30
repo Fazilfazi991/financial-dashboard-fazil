@@ -1,7 +1,7 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Plus, Target, Trophy, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -89,12 +89,10 @@ export default function GoalsPage() {
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Saved So Far</div>
                   <div className="text-lg font-bold tabular">{formatCurrency(goal.saved, 'INR')}</div>
-                  <div className="text-[10px] text-muted-foreground">{fmtAED(toAED(goal.saved))}</div>
                 </div>
                 <div className="text-right space-y-1">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Target</div>
                   <div className="text-lg font-bold tabular text-muted-foreground">{formatCurrency(goal.target, 'INR')}</div>
-                  <div className="text-[10px] text-muted-foreground">{fmtAED(toAED(goal.target))}</div>
                 </div>
               </div>
 

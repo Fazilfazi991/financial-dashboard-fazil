@@ -1,7 +1,7 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { 
   Plus, 
   Wallet, 
@@ -50,12 +50,9 @@ export default function AccountsPage() {
     return balance;
   };
 
-  const totalInINR = accounts.reduce((sum, a) => {
-    const bal = getAccountBalance(a.id);
-    return sum + (a.currency === 'INR' ? bal : bal * (settings?.aedToInr || 25));
+  const totalBalance = accounts.reduce((sum, a) => {
+    return sum + getAccountBalance(a.id);
   }, 0);
-
-  const totalInAED = totalInINR / (settings?.aedToInr || 25);
 
   return (
     <div className="space-y-12 pb-32">
@@ -72,8 +69,7 @@ export default function AccountsPage() {
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="glass px-8 py-5 rounded-[2rem] border-primary/20 bg-primary/5 min-w-[240px] relative overflow-hidden group">
             <div className="text-[10px] font-black text-primary uppercase tracking-[0.25em] mb-2">Total Combined Value</div>
-            <div className="text-3xl font-black tabular tracking-tighter">{formatCurrency(totalInINR, 'INR')}</div>
-            <div className="text-sm font-bold text-muted-foreground mt-1 opacity-60">≈ {fmtAED(totalInAED)}</div>
+            <div className="text-3xl font-black tabular tracking-tighter">{formatCurrency(totalBalance, 'INR')}</div>
             <CircleDollarSign className="absolute -bottom-2 -right-2 w-16 h-16 text-primary/10 group-hover:scale-110 transition-transform duration-500" />
           </div>
           <AccountDialog />
@@ -85,7 +81,6 @@ export default function AccountsPage() {
         {accounts.map((account, index) => {
           const balance = getAccountBalance(account.id);
           const Icon = ICON_MAP[account.icon || ''] || Wallet;
-          const isINR = account.currency === 'INR';
 
           return (
             <motion.div
@@ -130,11 +125,7 @@ export default function AccountsPage() {
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <div className="text-4xl font-black tabular tracking-tighter">
-                      {isINR ? formatCurrency(balance, 'INR') : fmtAED(balance)}
-                    </div>
-                    <div className="text-sm font-bold text-muted-foreground opacity-50 flex items-center gap-2">
-                      <ArrowRightLeft className="w-3 h-3" />
-                      {isINR ? fmtAED(toAED(balance)) : formatCurrency(balance * settings.aedToInr, 'INR')}
+                      {formatCurrency(balance, 'INR')}
                     </div>
                   </div>
                 </div>

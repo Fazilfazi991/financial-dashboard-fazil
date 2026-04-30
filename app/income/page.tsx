@@ -1,7 +1,7 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency, toAED, fmtAED } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -44,16 +44,7 @@ export default function IncomePage() {
     return { ...stream, actualThisMonth: actual };
   });
 
-  const totalAED = streamsWithActuals
-    .filter(s => s.currency === 'AED')
-    .reduce((sum, s) => sum + s.actualThisMonth, 0);
-
-  const totalINR = streamsWithActuals
-    .filter(s => s.currency === 'INR')
-    .reduce((sum, s) => sum + s.actualThisMonth, 0);
-
-  const combinedInAED = totalAED + (totalINR / settings.aedToInr);
-  const combinedInINR = totalINR + (totalAED * settings.aedToInr);
+  const totalActual = streamsWithActuals.reduce((sum, s) => sum + s.actualThisMonth, 0);
 
   return (
     <div className="space-y-8 pb-32">
@@ -68,12 +59,8 @@ export default function IncomePage() {
         
         <div className="glass px-8 py-4 rounded-3xl text-right">
           <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-1">Total This Month</div>
-          <div className="text-xl font-bold tabular">
-            {fmtAED(totalAED)} <span className="text-muted-foreground font-medium mx-1">+</span> {formatCurrency(totalINR, 'INR')}
-          </div>
-          <div className="flex justify-end gap-3 mt-1 opacity-60 text-[10px] font-bold">
-            <span>≈ {fmtAED(combinedInAED)}</span>
-            <span>≈ {formatCurrency(combinedInINR, 'INR')}</span>
+          <div className="text-2xl font-bold tabular">
+            {formatCurrency(totalActual, 'INR')}
           </div>
         </div>
       </div>
@@ -109,9 +96,6 @@ export default function IncomePage() {
                       <span className="px-2 py-0.5 bg-secondary text-[10px] font-bold rounded uppercase tracking-wider">
                         {stream.type}
                       </span>
-                      <span className="text-lg">
-                        {stream.currency === 'AED' ? '🇦🇪' : '🇮🇳'}
-                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{stream.notes}</p>
                   </div>
@@ -124,14 +108,14 @@ export default function IncomePage() {
                     Expected <HelpCircle className="w-3 h-3 opacity-50" />
                   </div>
                   <div className="text-2xl font-black tabular">
-                    {stream.currency === 'INR' ? formatCurrency(stream.expectedMonthly, 'INR') : fmtAED(stream.expectedMonthly)}
+                    {formatCurrency(stream.expectedMonthly, 'INR')}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Actual</div>
                   <div className="flex items-center gap-3">
                     <div className="text-2xl font-black tabular">
-                      {stream.currency === 'INR' ? formatCurrency(stream.actualThisMonth, 'INR') : fmtAED(stream.actualThisMonth)}
+                      {formatCurrency(stream.actualThisMonth, 'INR')}
                     </div>
                     <div className={cn(
                       "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter",
