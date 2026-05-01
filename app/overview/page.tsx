@@ -15,7 +15,8 @@ import {
   Wallet,
   ArrowDownLeft,
   PiggyBank,
-  CheckCircle2
+  CheckCircle2,
+  Trophy
 } from "lucide-react";
 
 const ICON_MAP: Record<string, any> = {
@@ -52,6 +53,7 @@ export default function OverviewPage() {
   const visaGoals = goals.filter(g => g.name.toLowerCase().includes('visa'));
   const totalVisaGoal = visaGoals.reduce((sum, g) => sum + Number(g.target), 0);
   const freedomNumber = totalDebt + totalVisaGoal;
+  const totalDebtPaidOff = debts.reduce((sum, d) => sum + (Number(d.total) - Number(d.balance)), 0);
   
   const monthlyBurn = expenses.reduce((sum, e) => sum + Number(e.budgeted), 0);
   const monthsToFreedom = extraPayment > 0 ? (freedomNumber / extraPayment).toFixed(1) : "∞";
@@ -97,7 +99,29 @@ export default function OverviewPage() {
             Every rupee earned above expenses clears 0.06% of your total debt.
           </p>
         </div>
-      </motion.div>      {/* Section: Debt Portfolio */}
+      </motion.div>
+
+      {/* Section B: Debt Paid Off Banner */}
+      <div className="px-1">
+        <div className="glass p-8 rounded-[2.5rem] bg-primary/5 border-primary/10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 group hover:border-primary/30 transition-all duration-500">
+          <div className="flex items-center gap-6 relative z-10">
+            <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+              <Trophy className="w-8 h-8 text-primary" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black text-primary uppercase tracking-[0.25em] mb-1">Progress Milestone</div>
+              <h3 className="text-xl font-bold tracking-tight">Total Debt Paid Off Till Date</h3>
+            </div>
+          </div>
+          <div className="text-4xl md:text-5xl font-black text-primary tabular tracking-tighter relative z-10">
+            {formatCurrency(totalDebtPaidOff, 'INR')}
+          </div>
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none group-hover:opacity-[0.07] transition-opacity duration-500">
+            <CheckCircle2 className="w-48 h-48 rotate-12" />
+          </div>
+        </div>
+      </div>      {/* Section: Debt Portfolio */}
       <div className="space-y-6">
         <div className="flex justify-between items-end px-1">
           <h2 className="text-xl font-bold">Debt Portfolio</h2>
