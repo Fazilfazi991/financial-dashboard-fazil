@@ -36,7 +36,13 @@ export function AddGoalDialog({ children }: { children?: React.ReactNode }) {
       deadline: deadline || undefined,
       description,
       category,
-      manualProgress: parseFloat(target) === 0 ? 0 : undefined
+      manualProgress: parseFloat(target) === 0 ? 0 : undefined,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
+      notes: "",
+      currentMilestone: 0,
+      totalMilestones: 0,
+      milestoneValue: 0
     };
 
     addGoal(newGoal);

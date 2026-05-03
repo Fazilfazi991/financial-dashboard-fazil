@@ -52,6 +52,12 @@ export interface Goal {
   description?: string;
   category?: string;
   manualProgress?: number;
+  createdAt: string;
+  notes?: string;
+  lastUpdated?: string;
+  currentMilestone?: number;
+  totalMilestones?: number;
+  milestoneValue?: number;
 }
 
 export interface Account {

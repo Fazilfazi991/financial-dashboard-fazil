@@ -71,7 +71,13 @@ export async function GET() {
         deadline TEXT,
         description TEXT,
         category TEXT,
-        manual_progress NUMERIC DEFAULT 0
+        manual_progress NUMERIC DEFAULT 0,
+        created_at TEXT,
+        notes TEXT,
+        last_updated TEXT,
+        current_milestone NUMERIC DEFAULT 0,
+        total_milestones NUMERIC DEFAULT 0,
+        milestone_value NUMERIC DEFAULT 0
       )
     `;
     
@@ -80,6 +86,12 @@ export async function GET() {
       await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS description TEXT`;
       await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS category TEXT`;
       await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS manual_progress NUMERIC DEFAULT 0`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS created_at TEXT`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS notes TEXT`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS last_updated TEXT`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS current_milestone NUMERIC DEFAULT 0`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS total_milestones NUMERIC DEFAULT 0`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS milestone_value NUMERIC DEFAULT 0`;
     } catch (e) {
       console.log("Migration columns might already exist");
     }
