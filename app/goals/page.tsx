@@ -2,15 +2,6 @@
 
 import { useFinanceStore, Goal } from "@/lib/store";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Target, Trophy, Clock, Edit2, Check, X, Tag, FileText } from "lucide-react";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
-import { AddGoalDialog } from "@/components/add-goal-dialog";
-import { Input } from "@/components/ui/input";
-
-import { useFinanceStore, Goal } from "@/lib/store";
-import { formatCurrency } from "@/lib/utils";
 import { Plus, Target, Trophy, Clock, Edit2, Check, X, Tag, FileText, Pencil, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -382,8 +373,6 @@ export default function GoalsPage() {
             </p>
           </div>
         )}
-      </div>
-    </div>
       </div>
     </div>
   );
