@@ -49,6 +49,9 @@ export interface Goal {
   target: number;
   saved: number;
   deadline?: string;
+  description?: string;
+  category?: string;
+  manualProgress?: number;
 }
 
 export interface Account {
@@ -173,7 +176,7 @@ export const useFinanceStore = create<FinanceState>()(
     settings: {
       currency: 'INR',
       secondaryCurrency: 'AED',
-      aedToInr: 25,
+      aedToInr: 26,
       theme: 'dark',
       name: 'User',
       accentColor: '#10b981',

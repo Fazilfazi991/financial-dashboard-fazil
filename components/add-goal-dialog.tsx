@@ -15,32 +15,39 @@ import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 
 export function AddGoalDialog({ children }: { children?: React.ReactNode }) {
-  const { setGoals, goals } = useFinanceStore();
+  const { addGoal } = useFinanceStore();
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
-  const [target, setTarget] = React.useState("");
-  const [saved, setSaved] = React.useState("");
+  const [target, setTarget] = React.useState("0");
+  const [saved, setSaved] = React.useState("0");
   const [deadline, setDeadline] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [category, setCategory] = React.useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !target || !saved) return;
+    if (!name) return;
 
     const newGoal = {
       id: crypto.randomUUID(),
       name,
-      target: parseFloat(target),
-      saved: parseFloat(saved),
-      deadline: deadline || undefined
+      target: parseFloat(target) || 0,
+      saved: parseFloat(saved) || 0,
+      deadline: deadline || undefined,
+      description,
+      category,
+      manualProgress: parseFloat(target) === 0 ? 0 : undefined
     };
 
-    setGoals([...goals, newGoal]);
+    addGoal(newGoal);
     setOpen(false);
     // Reset
     setName("");
-    setTarget("");
-    setSaved("");
+    setTarget("0");
+    setSaved("0");
     setDeadline("");
+    setDescription("");
+    setCategory("");
   };
 
   return (
@@ -68,6 +75,26 @@ export function AddGoalDialog({ children }: { children?: React.ReactNode }) {
             />
           </div>
 
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Category</label>
+            <Input 
+              placeholder="Personal, Company..." 
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="bg-secondary/50 border-border/50 rounded-xl"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Description</label>
+            <Input 
+              placeholder="Brief description..." 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="bg-secondary/50 border-border/50 rounded-xl"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Target Amount</label>
@@ -77,8 +104,8 @@ export function AddGoalDialog({ children }: { children?: React.ReactNode }) {
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 className="bg-secondary/50 border-border/50 rounded-xl"
-                required
               />
+              <p className="text-[9px] text-muted-foreground italic">Use 0 for milestone goals</p>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Already Saved</label>
@@ -88,7 +115,6 @@ export function AddGoalDialog({ children }: { children?: React.ReactNode }) {
                 value={saved}
                 onChange={(e) => setSaved(e.target.value)}
                 className="bg-secondary/50 border-border/50 rounded-xl"
-                required
               />
             </div>
           </div>

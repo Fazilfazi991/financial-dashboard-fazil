@@ -59,9 +59,14 @@ export default function OverviewPage() {
   const monthsToFreedom = extraPayment > 0 ? (freedomNumber / extraPayment).toFixed(1) : "∞";
 
   const today = new Date().toISOString().split('T')[0];
-  const todayTransactions = transactions.filter(t => t.date === today);
-  const todayIncome = todayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
-  const todayExpense = todayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+  const todayIncome = todayTransactions.filter(t => t.type === 'income').reduce((sum, t) => {
+    const amt = t.currency === 'AED' ? Number(t.amount) * settings.aedToInr : Number(t.amount);
+    return sum + amt;
+  }, 0);
+  const todayExpense = todayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => {
+    const amt = t.currency === 'AED' ? Number(t.amount) * settings.aedToInr : Number(t.amount);
+    return sum + amt;
+  }, 0);
 
   const getAccountBalance = (accId: string) => {
     const acc = accounts.find(a => a.id === accId);
@@ -69,7 +74,15 @@ export default function OverviewPage() {
     const txns = transactions.filter(t => t.accountId === accId || t.toAccountId === accId);
     let balance = Number(acc.openingBalance || 0);
     txns.forEach(t => {
-      const amt = Number(t.amount);
+      let amt = Number(t.amount);
+      // Convert transaction amount to account currency if they differ
+      if (t.currency && t.currency !== acc.currency) {
+        if (t.currency === 'INR' && acc.currency === 'AED') {
+          amt = amt / settings.aedToInr;
+        } else if (t.currency === 'AED' && acc.currency === 'INR') {
+          amt = amt * settings.aedToInr;
+        }
+      }
       if (t.type === 'income' && t.accountId === accId) balance += amt;
       else if (t.type === 'expense' && t.accountId === accId) balance -= amt;
       else if (t.type === 'transfer') {

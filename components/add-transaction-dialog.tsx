@@ -55,6 +55,7 @@ export function AddTransactionDialog({
   const [category, setCategory] = React.useState("");
   const [linkedDebtId, setLinkedDebtId] = React.useState("");
   const [linkedGoalId, setLinkedGoalId] = React.useState("");
+  const [currency, setCurrency] = React.useState('INR');
   const [description, setDescription] = React.useState("");
   const [date, setDate] = React.useState(new Date().toISOString().split('T')[0]);
 
@@ -70,16 +71,29 @@ export function AddTransactionDialog({
       if (initialStreamId) {
         const stream = incomes.find(s => s.id === initialStreamId);
         if (stream) {
-          if (stream.linkedAccountId) setAccountId(stream.linkedAccountId);
+          if (stream.linkedAccountId) {
+            setAccountId(stream.linkedAccountId);
+            const acc = accounts.find(a => a.id === stream.linkedAccountId);
+            if (acc) setCurrency(acc.currency);
+          }
           setCategory(stream.type === 'Business' ? 'Business' : stream.type);
           setDescription(`Income from ${stream.name}`);
         }
       } else {
         const defaultAcc = accounts.find(a => a.isDefault) || accounts[0];
-        if (defaultAcc) setAccountId(defaultAcc.id);
+        if (defaultAcc) {
+          setAccountId(defaultAcc.id);
+          setCurrency(defaultAcc.currency);
+        }
       }
     }
   }, [open, initialType, initialStreamId, incomes, accounts]);
+
+  // Update currency when account changes
+  React.useEffect(() => {
+    const acc = accounts.find(a => a.id === accountId);
+    if (acc) setCurrency(acc.currency);
+  }, [accountId, accounts]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +113,7 @@ export function AddTransactionDialog({
       category: type === 'transfer' ? 'Transfer' : category,
       description,
       date,
-      currency: 'INR', // Strictly INR as per user request
+      currency,
       createdAt: new Date().toISOString()
     };
 
@@ -163,15 +177,29 @@ export function AddTransactionDialog({
             ))}
           </div>
 
-          {/* Amount */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Amount</label>
-            <Input 
-              type="number" placeholder="0.00" value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="bg-secondary/50 border-border/50 rounded-xl py-6 text-lg font-bold"
-              required
-            />
+          {/* Amount & Currency */}
+          <div className="grid grid-cols-4 gap-4">
+            <div className="col-span-3 space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Amount</label>
+              <Input 
+                type="number" placeholder="0.00" value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="bg-secondary/50 border-border/50 rounded-xl py-6 text-lg font-bold"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Currency</label>
+              <Select value={currency} onValueChange={(val) => setCurrency(val)}>
+                <SelectTrigger className="bg-secondary/50 border-border/50 rounded-xl py-6 font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INR">₹ INR</SelectItem>
+                  <SelectItem value="AED">د.إ AED</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Wallets */}

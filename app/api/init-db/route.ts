@@ -68,9 +68,22 @@ export async function GET() {
         name TEXT NOT NULL,
         target NUMERIC NOT NULL DEFAULT 0,
         saved NUMERIC NOT NULL DEFAULT 0,
-        deadline TEXT
+        deadline TEXT,
+        description TEXT,
+        category TEXT,
+        manual_progress NUMERIC DEFAULT 0
       )
     `;
+    
+    // Migration: Add columns if they don't exist
+    try {
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS description TEXT`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS category TEXT`;
+      await sql`ALTER TABLE goals ADD COLUMN IF NOT EXISTS manual_progress NUMERIC DEFAULT 0`;
+    } catch (e) {
+      console.log("Migration columns might already exist");
+    }
+
     await sql`
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,

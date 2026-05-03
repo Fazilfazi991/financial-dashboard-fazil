@@ -39,7 +39,17 @@ export default function AccountsPage() {
     const txns = transactions.filter(t => t.accountId === accId || t.toAccountId === accId);
     let balance = Number(acc.openingBalance || 0);
     txns.forEach(t => {
-      const amt = Number(t.amount);
+      let amt = Number(t.amount);
+      
+      // Convert transaction amount to account currency if they differ
+      if (t.currency && t.currency !== acc.currency) {
+        if (t.currency === 'INR' && acc.currency === 'AED') {
+          amt = amt / settings.aedToInr;
+        } else if (t.currency === 'AED' && acc.currency === 'INR') {
+          amt = amt * settings.aedToInr;
+        }
+      }
+
       if (t.type === 'income' && t.accountId === accId) balance += amt;
       else if (t.type === 'expense' && t.accountId === accId) balance -= amt;
       else if (t.type === 'transfer') {
@@ -51,7 +61,11 @@ export default function AccountsPage() {
   };
 
   const totalBalance = accounts.reduce((sum, a) => {
-    return sum + getAccountBalance(a.id);
+    const balance = getAccountBalance(a.id);
+    if (a.currency === 'AED') {
+      return sum + (balance * settings.aedToInr);
+    }
+    return sum + balance;
   }, 0);
 
   return (
@@ -125,7 +139,7 @@ export default function AccountsPage() {
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <div className="text-4xl font-black tabular tracking-tighter">
-                      {formatCurrency(balance, 'INR')}
+                      {formatCurrency(balance, account.currency)}
                     </div>
                   </div>
                 </div>

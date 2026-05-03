@@ -17,8 +17,8 @@ export async function GET() {
       ('debt_004', 'Fayiz', 125000, 125000, 0, 0, 'Personal loan', '#378ADD'),
       ('debt_005', 'Azeezka', 20000, 20000, 0, 0, 'Small personal debt — clear first (snowball)', '#1D9E75'),
       ('debt_006', 'Kamru Zaman', 70000, 70000, 0, 0, 'Personal debt', '#D85A30'),
-      ('debt_007', 'Ayishatha', 125000, 125000, 0, 0, '5,000 AED × 25 = ₹1,25,000', '#639922'),
-      ('debt_008', 'Mummy', 200000, 200000, 0, 0, '8,000 AED × 25 = ₹2,00,000', '#E24B4A')
+      ('debt_007', 'Ayishatha', 130000, 130000, 0, 0, '5,000 AED × 26 = ₹1,30,000', '#639922'),
+      ('debt_008', 'Mummy', 208000, 208000, 0, 0, '8,000 AED × 26 = ₹2,08,000', '#E24B4A')
     `;
 
     // Seed accounts
@@ -36,11 +36,15 @@ export async function GET() {
       ('inc_005', 'More income streams coming soon...', 'placeholder', 'coming_soon', NULL, 0, 0, 'Tap + to add a new income stream', '#444', 'plus', '')
     `;
 
+    // Clear existing goals
+    await sql`DELETE FROM goals`;
+
     // Seed goals
-    await sql`INSERT INTO goals (id, name, target, saved, deadline) VALUES
-      ('goal_001', 'Visa Fine', 400000, 0, '2025-12-31'),
-      ('goal_002', 'Visa Processing Expenses', 175000, 0, '2025-12-31'),
-      ('goal_003', 'Full Debt Freedom', 1579326, 0, '2027-12-31')
+    await sql`INSERT INTO goals (id, name, target, saved, deadline, description, category, manual_progress) VALUES
+      ('goal_webdev', 'Web dev — 10 websites', 200000, 0, '2026-06-03', '10 client websites this month at ₹20,000 profit each', 'Personal', 0),
+      ('goal_marketing', 'Marketing retainer clients', 150000, 0, '2025-12-31', '1–3 recurring marketing clients at ₹50,000/month each', 'Personal / Company', 0),
+      ('goal_bedspace', 'Bedspace platform — build', 0, 0, '2025-07-31', 'Build and launch the UAE bedspace listing platform in parallel', 'Company', 0),
+      ('goal_artisan', 'Artisan platform — build', 0, 0, '2025-07-31', 'Build and launch the India artisan marketplace in parallel', 'Company', 0)
     `;
 
     // Seed expenses
@@ -54,7 +58,7 @@ export async function GET() {
     await sql`INSERT INTO app_settings (key, value) VALUES
       ('currency', '"INR"'),
       ('secondaryCurrency', '"AED"'),
-      ('aedToInr', '25'),
+      ('aedToInr', '26'),
       ('theme', '"dark"'),
       ('name', '"Your Name"'),
       ('accentColor', '"#10b981"'),
