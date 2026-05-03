@@ -9,46 +9,133 @@ import { cn } from "@/lib/utils";
 import { AddGoalDialog } from "@/components/add-goal-dialog";
 import { Input } from "@/components/ui/input";
 
+import { useFinanceStore, Goal } from "@/lib/store";
+import { formatCurrency } from "@/lib/utils";
+import { Plus, Target, Trophy, Clock, Edit2, Check, X, Tag, FileText, Pencil, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { AddGoalDialog } from "@/components/add-goal-dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+interface InlineEditProps {
+  value: string | number;
+  onSave: (val: any) => Promise<void>;
+  type?: 'text' | 'number' | 'date' | 'textarea';
+  className?: string;
+  label?: string;
+  prefix?: string;
+}
+
+function InlineEdit({ value, onSave, type = 'text', className, label, prefix }: InlineEditProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentValue, setCurrentValue] = useState(value);
+  const [status, setStatus] = useState<'success' | 'error' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (currentValue === value) {
+      setIsEditing(false);
+      return;
+    }
+    try {
+      await onSave(currentValue);
+      setStatus('success');
+      setTimeout(() => setStatus(null), 200);
+      setIsEditing(false);
+    } catch (e: any) {
+      setStatus('error');
+      setError(e.message || 'Failed to save');
+      setTimeout(() => setStatus(null), 200);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && type !== 'textarea') handleSave();
+    if (e.key === 'Escape') {
+      setCurrentValue(value);
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="w-full space-y-1">
+        {type === 'textarea' ? (
+          <Textarea
+            autoFocus
+            value={currentValue}
+            onChange={(e) => setCurrentValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className={cn("bg-secondary/50 min-h-[80px]", className)}
+          />
+        ) : (
+          <Input
+            type={type}
+            autoFocus
+            value={currentValue}
+            onChange={(e) => setCurrentValue(type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            className={cn("bg-secondary/50", className)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      onClick={() => setIsEditing(true)}
+      className={cn(
+        "group/edit relative cursor-pointer rounded-lg transition-all duration-200 border border-transparent",
+        status === 'success' && "border-emerald-500/50 bg-emerald-500/5",
+        status === 'error' && "border-destructive/50 bg-destructive/5",
+        !status && "hover:bg-white/5",
+        className
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <span className="truncate">
+          {prefix}{type === 'number' && typeof value === 'number' ? value.toLocaleString() : value}
+        </span>
+        <Pencil className="w-3 h-3 opacity-0 group-hover/edit:opacity-50 transition-opacity" />
+      </div>
+      {error && status === 'error' && (
+        <div className="absolute top-full left-0 mt-1 text-[10px] text-destructive flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" /> {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GoalsPage() {
   const { goals, updateGoal, deleteGoal } = useFinanceStore();
   const [mounted, setMounted] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<number>(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const sortedGoals = useMemo(() => {
+    return [...goals].sort((a, b) => {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    });
+  }, [goals]);
+
   if (!mounted) return null;
 
-  const startEditing = (goal: Goal) => {
-    setEditingId(goal.id);
-    setEditValue(goal.target === 0 ? (goal.manualProgress || 0) : goal.saved);
-  };
-
-  const saveEdit = (goal: Goal) => {
-    if (goal.target === 0) {
-      updateGoal(goal.id, { manualProgress: editValue, lastUpdated: new Date().toISOString() });
-    } else {
-      updateGoal(goal.id, { saved: editValue, lastUpdated: new Date().toISOString() });
+  const handleUpdate = async (id: string, data: Partial<Goal>) => {
+    try {
+      await updateGoal(id, { ...data, lastUpdated: new Date().toISOString() });
+    } catch (e) {
+      throw e;
     }
-    setEditingId(null);
-  };
-
-  const incrementMilestone = (goal: Goal) => {
-    if (goal.totalMilestones && goal.currentMilestone !== undefined && goal.currentMilestone < goal.totalMilestones) {
-      const newMilestone = goal.currentMilestone + 1;
-      const newSaved = goal.saved + (goal.milestoneValue || 0);
-      updateGoal(goal.id, { 
-        currentMilestone: newMilestone, 
-        saved: newSaved,
-        lastUpdated: new Date().toISOString()
-      });
-    }
-  };
-
-  const updateNotes = (goalId: string, notes: string) => {
-    updateGoal(goalId, { notes, lastUpdated: new Date().toISOString() });
   };
 
   const getDaysLeft = (deadline: string) => {
@@ -92,11 +179,10 @@ export default function GoalsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {goals.map((goal, index) => {
+        {sortedGoals.map((goal, index) => {
           const isMilestone = goal.target === 0;
           const progress = isMilestone ? (goal.manualProgress || 0) : (goal.saved / goal.target) * 100;
           const isCompleted = progress >= 100;
-          const isEditing = editingId === goal.id;
           
           const daysLeft = goal.deadline ? getDaysLeft(goal.deadline) : null;
           const status = getStatus(goal);
@@ -111,6 +197,7 @@ export default function GoalsPage() {
           return (
             <motion.div
               key={goal.id}
+              layout
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
@@ -125,19 +212,19 @@ export default function GoalsPage() {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex items-center gap-2">
-                    {daysLeft !== null && (
-                      <div 
-                        title={`Deadline: ${new Date(goal.deadline!).toLocaleDateString()}`}
+                    {goal.deadline && (
+                      <InlineEdit
+                        type="date"
+                        value={goal.deadline}
+                        onSave={(val) => handleUpdate(goal.id, { deadline: val })}
                         className={cn(
                           "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase",
-                          daysLeft < 7 ? "bg-destructive/20 text-destructive" :
-                          daysLeft <= 14 ? "bg-amber-500/20 text-amber-500" :
+                          daysLeft !== null && daysLeft < 7 ? "bg-destructive/20 text-destructive" :
+                          daysLeft !== null && daysLeft <= 14 ? "bg-amber-500/20 text-amber-500" :
                           "bg-secondary text-muted-foreground"
                         )}
-                      >
-                        <Clock className="w-3 h-3" />
-                        {daysLeft < 0 ? "Overdue" : `${daysLeft} days left`}
-                      </div>
+                        prefix={daysLeft !== null ? (daysLeft < 0 ? "Overdue — " : `${daysLeft} days left — `) : ""}
+                      />
                     )}
                     <button 
                       onClick={() => { if(confirm('Delete this goal?')) deleteGoal(goal.id) }}
@@ -156,12 +243,17 @@ export default function GoalsPage() {
               </div>
 
               <div className="space-y-2 mb-6">
-                <h3 className="text-xl font-bold">{goal.name}</h3>
-                {goal.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                    {goal.description}
-                  </p>
-                )}
+                <InlineEdit 
+                  value={goal.name} 
+                  onSave={(val) => handleUpdate(goal.id, { name: val })}
+                  className="text-xl font-bold"
+                />
+                <InlineEdit 
+                  type="textarea"
+                  value={goal.description || ""} 
+                  onSave={(val) => handleUpdate(goal.id, { description: val })}
+                  className="text-sm text-muted-foreground leading-relaxed"
+                />
               </div>
 
               <div className="flex items-center justify-between mb-8">
@@ -178,23 +270,6 @@ export default function GoalsPage() {
                     )}
                   </div>
                 </div>
-                {!isEditing ? (
-                  <button 
-                    onClick={() => startEditing(goal)}
-                    className="p-2 rounded-xl bg-secondary hover:bg-secondary/80 transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <div className="flex gap-1">
-                    <button onClick={() => saveEdit(goal)} className="p-2 rounded-xl bg-primary/20 text-primary hover:bg-primary/30">
-                      <Check className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setEditingId(null)} className="p-2 rounded-xl bg-destructive/20 text-destructive hover:bg-destructive/30">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Progress Visual */}
@@ -217,7 +292,7 @@ export default function GoalsPage() {
                 )}
               </div>
 
-              {/* Milestone Tracker specifically for Web Dev or goals with totalMilestones */}
+              {/* Milestone Tracker */}
               {goal.totalMilestones && goal.totalMilestones > 0 && (
                 <div className="mb-8 p-4 bg-secondary/30 rounded-2xl border border-white/5">
                   <div className="flex justify-between items-center mb-3">
@@ -237,7 +312,11 @@ export default function GoalsPage() {
                   </div>
                   {!isCompleted && (
                     <button 
-                      onClick={() => incrementMilestone(goal)}
+                      onClick={() => {
+                        const newMs = (goal.currentMilestone || 0) + 1;
+                        const newSaved = goal.saved + (goal.milestoneValue || 0);
+                        handleUpdate(goal.id, { currentMilestone: newMs, saved: newSaved });
+                      }}
                       className="w-full py-2 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary/20 transition-all flex items-center justify-center gap-2"
                     >
                       <Plus className="w-3 h-3" /> Increment Milestone
@@ -251,19 +330,13 @@ export default function GoalsPage() {
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                     {isMilestone ? "Manual Progress" : "Saved So Far"}
                   </div>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={editValue}
-                      onChange={(e) => setEditValue(parseFloat(e.target.value) || 0)}
-                      className="h-10 bg-secondary/50 border-primary/20 rounded-xl font-bold"
-                      autoFocus
-                    />
-                  ) : (
-                    <div className="text-lg font-bold tabular">
-                      {isMilestone ? `${goal.manualProgress || 0}%` : formatCurrency(goal.saved, 'INR')}
-                    </div>
-                  )}
+                  <InlineEdit
+                    type="number"
+                    value={isMilestone ? (goal.manualProgress || 0) : goal.saved}
+                    onSave={(val) => handleUpdate(goal.id, isMilestone ? { manualProgress: val } : { saved: val })}
+                    className="text-lg font-bold tabular"
+                    prefix={isMilestone ? "" : "₹"}
+                  />
                 </div>
                 {!isMilestone && (
                   <div className="text-right space-y-2">
@@ -278,13 +351,11 @@ export default function GoalsPage() {
               <div className="mt-auto pt-6 border-t border-white/5 space-y-4">
                 <div className="flex items-center gap-2">
                   <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                  <input 
-                    type="text"
-                    placeholder="Add a note..."
-                    defaultValue={goal.notes}
-                    onBlur={(e) => updateNotes(goal.id, e.target.value)}
-                    onKeyDown={(e) => { if(e.key === 'Enter') { e.currentTarget.blur(); } }}
-                    className="bg-transparent border-none p-0 text-xs text-muted-foreground focus:ring-0 placeholder:text-muted-foreground/30 w-full"
+                  <InlineEdit
+                    value={goal.notes || ""}
+                    onSave={(val) => handleUpdate(goal.id, { notes: val })}
+                    className="text-xs text-muted-foreground flex-1"
+                    label="Add a note..."
                   />
                 </div>
                 {lastUpdatedDays !== null && (
@@ -311,6 +382,8 @@ export default function GoalsPage() {
             </p>
           </div>
         )}
+      </div>
+    </div>
       </div>
     </div>
   );
