@@ -59,6 +59,7 @@ export default function OverviewPage() {
   const monthsToFreedom = extraPayment > 0 ? (freedomNumber / extraPayment).toFixed(1) : "∞";
 
   const today = new Date().toISOString().split('T')[0];
+  const todayTransactions = transactions.filter(t => t.date === today);
   const todayIncome = todayTransactions.filter(t => t.type === 'income').reduce((sum, t) => {
     const amt = t.currency === 'AED' ? Number(t.amount) * settings.aedToInr : Number(t.amount);
     return sum + amt;
