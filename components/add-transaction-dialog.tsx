@@ -87,7 +87,8 @@ export function AddTransactionDialog({
         }
       }
     }
-  }, [open, initialType, initialStreamId, incomes, accounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialType, initialStreamId]);
 
   // Update currency when account changes
   React.useEffect(() => {
