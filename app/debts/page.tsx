@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { AddDebtDialog } from "@/components/add-debt-dialog";
+import { EditDebtDialog } from "@/components/edit-debt-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -192,12 +193,19 @@ export default function DebtsPage() {
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => { if(confirm(`Delete debt to ${debt.name}?`)) deleteDebt(debt.id) }}
-                    className="absolute top-0 right-0 p-1.5 rounded-lg text-muted-foreground opacity-0 group-hover:opacity-100 transition-all hover:text-destructive"
-                  >
-                    <Plus className="w-4 h-4 rotate-45" />
-                  </button>
+                  <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-all flex items-center">
+                    <EditDebtDialog debt={debt}>
+                      <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </EditDebtDialog>
+                    <button 
+                      onClick={() => { if(confirm(`Delete debt to ${debt.name}?`)) deleteDebt(debt.id) }}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Plus className="w-4 h-4 rotate-45" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             );
