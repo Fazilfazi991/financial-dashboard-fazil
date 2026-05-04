@@ -1,14 +1,14 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, getAccountBalance } from "@/lib/utils";
 import { LineChart, ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export default function NetWorthPage() {
-  const { accounts, debts, settings, rates } = useFinanceStore();
+  const { accounts, debts, settings, rates, transactions } = useFinanceStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -23,7 +23,10 @@ export default function NetWorthPage() {
     return usdAmount * (rates.rates[settings.currency] || 1);
   };
 
-  const totalAssets = accounts.reduce((sum, a) => sum + convert(Number(a.openingBalance), a.currency), 0);
+  const totalAssets = accounts.reduce((sum, a) => {
+    const balance = getAccountBalance(a.id, accounts, transactions, settings);
+    return sum + convert(balance, a.currency);
+  }, 0);
   const totalLiabilities = debts.reduce((sum, d) => sum + Number(d.balance), 0);
   const netWorth = totalAssets - totalLiabilities;
 
@@ -65,7 +68,8 @@ export default function NetWorthPage() {
           <h3 className="text-lg font-bold mb-6">Asset Allocation</h3>
           <div className="space-y-4">
             {accounts.map(acc => {
-              const balance = convert(Number(acc.openingBalance), acc.currency);
+              const currentBalance = getAccountBalance(acc.id, accounts, transactions, settings);
+              const balance = convert(currentBalance, acc.currency);
               const percent = (balance / (totalAssets || 1)) * 100;
               return (
                 <div key={acc.id} className="space-y-2">

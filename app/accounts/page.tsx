@@ -1,7 +1,7 @@
 "use client";
 
 import { useFinanceStore } from "@/lib/store";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getAccountBalance } from "@/lib/utils";
 import { 
   Plus, 
   Wallet, 
@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   LayoutGrid,
   ArrowRightLeft,
-  CircleDollarSign
+  CircleDollarSign,
+  Pencil
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -33,35 +34,8 @@ export default function AccountsPage() {
 
   if (!mounted) return null;
 
-  const getAccountBalance = (accId: string) => {
-    const acc = accounts.find(a => a.id === accId);
-    if (!acc) return 0;
-    const txns = transactions.filter(t => t.accountId === accId || t.toAccountId === accId);
-    let balance = Number(acc.openingBalance || 0);
-    txns.forEach(t => {
-      let amt = Number(t.amount);
-      
-      // Convert transaction amount to account currency if they differ
-      if (t.currency && t.currency !== acc.currency) {
-        if (t.currency === 'INR' && acc.currency === 'AED') {
-          amt = amt / settings.aedToInr;
-        } else if (t.currency === 'AED' && acc.currency === 'INR') {
-          amt = amt * settings.aedToInr;
-        }
-      }
-
-      if (t.type === 'income' && t.accountId === accId) balance += amt;
-      else if (t.type === 'expense' && t.accountId === accId) balance -= amt;
-      else if (t.type === 'transfer') {
-        if (t.accountId === accId) balance -= amt;
-        if (t.toAccountId === accId) balance += amt;
-      }
-    });
-    return balance;
-  };
-
   const totalBalance = accounts.reduce((sum, a) => {
-    const balance = getAccountBalance(a.id);
+    const balance = getAccountBalance(a.id, accounts, transactions, settings);
     if (a.currency === 'AED') {
       return sum + (balance * settings.aedToInr);
     }
@@ -93,7 +67,7 @@ export default function AccountsPage() {
       {/* Wallets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {accounts.map((account, index) => {
-          const balance = getAccountBalance(account.id);
+          const balance = getAccountBalance(account.id, accounts, transactions, settings);
           const Icon = ICON_MAP[account.icon || ''] || Wallet;
 
           return (
@@ -127,12 +101,19 @@ export default function AccountsPage() {
                     <span className="px-3 py-1 bg-secondary text-[10px] font-black uppercase tracking-widest rounded-full border border-white/5">
                       {account.tag || account.type}
                     </span>
-                    <button 
-                      onClick={() => { if(confirm(`Remove ${account.name}?`)) deleteAccount(account.id) }}
-                      className="p-2 rounded-xl text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Plus className="w-4 h-4 rotate-45" />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <AccountDialog account={account}>
+                        <button className="p-2 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </AccountDialog>
+                      <button 
+                        onClick={() => { if(confirm(`Remove ${account.name}?`)) deleteAccount(account.id) }}
+                        className="p-2 rounded-xl text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Plus className="w-4 h-4 rotate-45" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 

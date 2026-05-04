@@ -40,3 +40,30 @@ export const calculatePercentage = (value: number, total: number) => {
   if (total === 0) return 0;
   return Math.round((value / total) * 100);
 };
+
+export const getAccountBalance = (accId: string, accounts: any[], transactions: any[], settings: any) => {
+  const acc = accounts.find((a: any) => a.id === accId);
+  if (!acc) return 0;
+  const txns = transactions.filter((t: any) => t.accountId === accId || t.toAccountId === accId);
+  let balance = Number(acc.openingBalance || 0);
+  txns.forEach((t: any) => {
+    let amt = Number(t.amount);
+    
+    // Convert transaction amount to account currency if they differ
+    if (t.currency && t.currency !== acc.currency) {
+      if (t.currency === 'INR' && acc.currency === 'AED') {
+        amt = amt / settings.aedToInr;
+      } else if (t.currency === 'AED' && acc.currency === 'INR') {
+        amt = amt * settings.aedToInr;
+      }
+    }
+
+    if (t.type === 'income' && t.accountId === accId) balance += amt;
+    else if (t.type === 'expense' && t.accountId === accId) balance -= amt;
+    else if (t.type === 'transfer') {
+      if (t.accountId === accId) balance -= amt;
+      if (t.toAccountId === accId) balance += amt;
+    }
+  });
+  return balance;
+};
